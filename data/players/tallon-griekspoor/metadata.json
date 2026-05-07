@@ -1,0 +1,24 @@
+{
+  "player": "Tallon Griekspoor",
+  "slug": "tallon-griekspoor",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "si.robi",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/Griekspoor_MCM22_%2852035366412%29.jpg/960px-Griekspoor_MCM22_%2852035366412%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC0",
+      "author": "Shev123",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/2018_Roland_Garros_Qualifying_Tournament_-_13.jpg/960px-2018_Roland_Garros_Qualifying_Tournament_-_13.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

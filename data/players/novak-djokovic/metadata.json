@@ -1,0 +1,15 @@
+{
+  "player": "Novak Djokovic",
+  "slug": "novak-djokovic",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Novak_Djokovic_2024_Paris_Olympics.jpg/960px-Novak_Djokovic_2024_Paris_Olympics.jpg",
+      "downloaded_at": "2026-05-07"
+    }
+  ]
+}

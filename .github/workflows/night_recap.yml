@@ -1,0 +1,82 @@
+name: Night Recap Reel — 21h BRT
+
+# Reel de recap do dia publicado às 21:00 BRT (00:00 UTC)
+# Resume os melhores momentos e resultados do dia em 30-45 segundos
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: night-recap
+  cancel-in-progress: false
+
+jobs:
+  night_recap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: pip-${{ runner.os }}-
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium
+          restore-keys: playwright-${{ runner.os }}-
+
+      - name: Install system deps
+        run: sudo apt-get install -y ffmpeg --no-install-recommends
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Install Node deps
+        run: npm ci
+
+      - name: Install Playwright (chromium only)
+        run: python -m playwright install chromium --with-deps
+
+      - name: Gerar Night Recap Reel
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+        run: python orchestrator.py night-recap
+
+      - name: Upload output
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: night-recap-${{ github.run_id }}
+          path: output/queue/
+          retention-days: 3

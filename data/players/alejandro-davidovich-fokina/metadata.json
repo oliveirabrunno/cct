@@ -1,0 +1,24 @@
+{
+  "player": "Alejandro Davidovich Fokina",
+  "slug": "alejandro-davidovich-fokina",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY 2.0",
+      "author": "aarublevnews from UK",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/B1-DSCF2123-ADF_%2853050927490%29.jpg/960px-B1-DSCF2123-ADF_%2853050927490%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY 2.0",
+      "author": "aarublevnews from UK",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/B1-DSCF2120-ADF_%2853050540461%29.jpg/960px-B1-DSCF2120-ADF_%2853050540461%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

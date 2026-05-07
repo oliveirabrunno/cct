@@ -1,0 +1,62 @@
+Você vai criar um carrossel estilo @tennischannel mostrando OS FAVORITOS e OS BRASILEIROS no torneio.
+
+FORMATO: {total_slides} slides.
+
+Slide 1 — CAPA:
+  Headline impactante que para o scroll.
+  Exemplo: "OS FAVORITOS EM ROMA" ou "O CHAVE DO ATP EM ROMA"
+  Subtext: torneio, data, superfície.
+  visual_note: sem_foto
+
+Slides 2 a {n_seeds} — UM SLIDE POR CABEÇA DE CHAVE (seeds #1 ao #4):
+  Para cada seed:
+  - Headline: "SEED #{seed}. {SOBRENOME}." (ex: "SEED #1. SINNER.")
+  - Subtext: caminho resumido em 2-3 linhas. Formato:
+    "Quartas: vs {nome} (#{seed})"
+    "Semifinal: vs {nome} (#{seed})"
+    "Final: vs {nome} (#{seed})"
+    + 1 stat relevante curta (H2H, ranking, última vez que ganhou aqui)
+  - Use números reais dos dados fornecidos
+  - visual_note: foto_clean para TODOS os seeds (todos os 4 slides precisam de foto do jogador)
+
+Slides brasileiros — UM POR BRASILEIRO:
+  Tom diferente: não é "favorito", é "o brasileiro em campo".
+  - Headline: "{SOBRENOME} 🇧🇷. ROMA."
+  - Subtext: seed/ranking real + o maior obstáculo no caminho + frase de emoção
+    Exemplo: "Sem seed. Mas #29 do mundo. Pode cruzar com Zverev nas oitavas."
+  - visual_note: foto_action
+
+Último slide — CTA:
+  - Headline curta: "QUEM LEVA {TORNEIO}?"
+  - Subtext: pergunta que gera comentário + @cafecomteniss
+  - visual_note: logo
+
+REGRAS:
+- Nunca truncar nomes: Djokovic, Sabalenka, Fonseca, Haddad Maia — sempre completo
+- Use os dados fornecidos — não invente adversários ou stats
+- Português do Brasil, direto, sem enrolação
+- Headlines máx 5 palavras, subtext máx 3 linhas
+
+TORNEIO: {tournament_name} — {tournament_date}
+Superfície: {surface} | Categoria: {category}
+
+TOP 4 SEEDS CONFIRMADOS:
+{seeds_text}
+
+BRASILEIROS:
+{brazilians_text}
+
+OUTPUT JSON (APENAS o JSON, sem texto antes ou depois):
+{
+  "slides": [
+    {"slide": 1, "headline": "", "subtext": "", "visual_note": "sem_foto", "player": ""},
+    {"slide": 2, "headline": "", "subtext": "", "visual_note": "foto_clean", "player": "{seed1_name}"},
+    {"slide": 3, "headline": "", "subtext": "", "visual_note": "foto_clean", "player": "{seed2_name}"},
+    {"slide": 4, "headline": "", "subtext": "", "visual_note": "foto_clean", "player": "{seed3_name}"},
+    {"slide": 5, "headline": "", "subtext": "", "visual_note": "foto_clean", "player": "{seed4_name}"},
+    {"slide": 6, "headline": "", "subtext": "", "visual_note": "foto_action", "player": "{brazilian_name}"},
+    {"slide": 7, "headline": "", "subtext": "CTA + @cafecomteniss", "visual_note": "logo", "player": ""}
+  ],
+  "caption": "legenda completa (máx 150 palavras)",
+  "hashtags": ["tennis", "ATP", "cafecomtenis", "Roma2026", "RolandGarros"]
+}

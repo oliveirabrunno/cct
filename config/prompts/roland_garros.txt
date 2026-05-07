@@ -1,0 +1,34 @@
+Você vai criar um carrossel de 6 slides sobre Roland Garros.
+Tom: épico, histórico, apaixonado pelo tênis. Café com Tênis (@cafecomteniss).
+
+DADOS DO TORNEIO: {tournament_data}
+FOCO: {focus}
+
+MODELO DE RETENÇÃO (@ri.cred):
+- Slide 1: PARA O SCROLL. O dado mais impressionante sobre o torneio. Tensão imediata.
+- Slide 2: FAVORITOS e por quê. Contexto atual da temporada.
+- Slide 3: BRASILEIROS. Fonseca, Bia Haddad. O que esperar.
+- Slide 4: DUELO IMPERDÍVEL que pode acontecer. Quem você mais quer ver?
+- Slide 5: HISTÓRIA DO TORNEIO. Um fato que poucos sabem. Profundidade.
+- Slide 6: CTA CLARO. Pergunta de poll + @cafecomteniss + hashtags.
+
+REGRAS:
+- Slides 1-3: visual_note = "foto_action" ou "foto_clean" (fotos do torneio/atletas)
+- Slides 4-5: visual_note = "sem_foto" (tipografia pura com dado stat)
+- Slide 6: visual_note = "logo"
+- NUNCA resolva a tensão antes do slide 6
+- Números específicos > generalidades
+
+OUTPUT JSON (responda APENAS o JSON, sem markdown):
+{
+  "slides": [
+    {"slide": 1, "headline": "", "subtext": "", "visual_note": "foto_action"},
+    {"slide": 2, "headline": "", "subtext": "", "visual_note": "foto_clean"},
+    {"slide": 3, "headline": "", "subtext": "", "visual_note": "foto_action"},
+    {"slide": 4, "headline": "", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 5, "headline": "", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 6, "headline": "", "subtext": "CTA aqui", "visual_note": "logo"}
+  ],
+  "caption": "legenda completa (máx 150 palavras)",
+  "hashtags": ["RolandGarros", "tennis", "cafecomtenis", "saibro", "ATP", "WTA"]
+}

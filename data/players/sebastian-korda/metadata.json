@@ -1,0 +1,24 @@
+{
+  "player": "Sebastian Korda",
+  "slug": "sebastian-korda",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "si.robi",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Korda_MCM22_%288%29_%2852035367862%29.jpg/960px-Korda_MCM22_%288%29_%2852035367862%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "si.robi",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Korda_RG21_%2864%29_%2851375396752%29.jpg/960px-Korda_RG21_%2864%29_%2851375396752%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

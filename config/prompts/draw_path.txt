@@ -1,0 +1,75 @@
+Você vai criar um carrossel estilo @tennischannel mostrando o POSSÍVEL CAMINHO de um tenista no torneio.
+
+O objetivo é mostrar rodada a rodada quem pode ser o adversário, criando antecipação e debate nos comentários.
+
+ESTRUTURA DOS SLIDES (6 slides):
+
+Slide 1 — CAPA: Para o scroll.
+  Headline curta e impactante com nome + seed + torneio.
+  Exemplo: "O CAMINHO DE SINNER EM ROMA" ou "FONSECA #29. ROMA. O QUE ESPERAR?"
+  visual_note: foto_action
+
+Slide 2 — 1ª/2ª RODADA:
+  Quem o jogador enfrenta de cara. Se tiver bye, dizer quem provavelmente vem depois.
+  Contexte o adversário brevemente ("vem de...", "ranking #X").
+  visual_note: sem_foto
+
+Slide 3 — OITAVAS ou QUARTAS DE FINAL:
+  A primeira batalha de verdade. Adversário projetado + contexto histórico entre eles se houver.
+  visual_note: foto_clean
+
+Slide 4 — SEMIFINAL:
+  O jogo dos sonhos (ou pesadelo). Confronto projetado com a maior tensão emocional.
+  "Se chegar aqui, vai encarar..." — construa a expectativa.
+  visual_note: sem_foto
+
+Slide 5 — A FINAL POSSÍVEL:
+  Quem pode estar do outro lado na grande final. Tom épico.
+  Use fatos históricos se houver ("nunca venceu uma final direta", "H2H 5-3 a favor de...").
+  visual_note: foto_clean
+
+Slide 6 — CTA:
+  Pergunta direta que gera comentário.
+  Exemplo: "Fonseca passa das quartas em Roma?" ou "Sinner defende o título?"
+  Sempre termina com @cafecomteniss
+  visual_note: logo
+
+REGRAS DE ESCRITA:
+- Cada slide deve fazer o leitor querer ver o próximo
+- Use números (H2H, ranking, idade, títulos) — nunca genérico
+- Português do Brasil natural, apaixonado
+- Headlines curtas (máx 5 palavras) + subtext de 2-3 linhas explicando
+- NUNCA truncar nomes (Djokovic, Alcaraz, Sabalenka, Fonseca — sempre completo)
+
+DADOS DO TORNEIO E DO JOGADOR:
+Torneio: {tournament_name} ({tournament_date})
+Superfície: {surface}
+Categoria: {category}
+Local: {location}
+
+JOGADOR: {player_name}
+Seed: #{player_seed}
+Ranking: #{player_rank}
+País: {player_country}
+
+CAMINHO PROJETADO:
+{path_text}
+
+TOP SEEDS NO TORNEIO:
+{seeds_text}
+
+PRÓXIMO GRANDE TORNEIO: {next_name} ({next_date})
+
+OUTPUT JSON (responda APENAS o JSON, sem markdown, sem texto antes ou depois):
+{
+  "slides": [
+    {"slide": 1, "headline": "", "subtext": "", "visual_note": "foto_action"},
+    {"slide": 2, "headline": "", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 3, "headline": "", "subtext": "", "visual_note": "foto_clean"},
+    {"slide": 4, "headline": "", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 5, "headline": "", "subtext": "", "visual_note": "foto_clean"},
+    {"slide": 6, "headline": "", "subtext": "CTA + @cafecomteniss", "visual_note": "logo"}
+  ],
+  "caption": "legenda completa do post (máx 150 palavras, tom apaixonado)",
+  "hashtags": ["tennis", "ATP", "cafecomtenis", "Roma2025"]
+}

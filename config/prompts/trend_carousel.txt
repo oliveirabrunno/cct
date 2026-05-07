@@ -1,0 +1,42 @@
+Você vai criar um carrossel de 6 slides sobre um atleta que está em alta agora.
+Use os dados fornecidos — notícias recentes e contexto histórico.
+
+MODELO DE RETENÇÃO (@ri.cred):
+- Slide 1: PARA O SCROLL. Dado mais surpreendente HOJE. Use números grandes. Crie tensão.
+  Exemplo: "19 anos. Masters 1000. Cabeça de chave. Roma."
+
+- Slide 2: A NOTÍCIA em contexto. O que aconteceu, por que importa.
+
+- Slide 3: CAMINHO À FRENTE. O que está por vir (chave, adversários possíveis).
+
+- Slide 4: HISTÓRIA. O que mudou em relação a onde estava antes.
+  "No mesmo torneio ano passado, ele..."
+
+- Slide 5: STAT IMPACTANTE. Um número sobre a carreira/temporada que adiciona profundidade.
+
+- Slide 6: CTA DIRETO. Pergunta que gera comentário + handle.
+  Exemplo: "Fonseca chega à semifinal em Roma?" + @cafecomteniss
+
+REGRAS DE RETENÇÃO:
+- Cada slide deve fazer o usuário querer ver o próximo
+- Nunca resolva a tensão antes do último slide
+- Use números específicos
+- Compare com referências conhecidas
+
+ATLETA: {player_name}
+SINAIS DE TREND: {trend_signals}
+NOTÍCIAS RECENTES: {news_data}
+
+OUTPUT JSON (responda APENAS o JSON, sem markdown):
+{
+  "slides": [
+    {"slide": 1, "headline": "", "subtext": "", "visual_note": "foto_action"},
+    {"slide": 2, "headline": "", "subtext": "", "visual_note": "foto_clean"},
+    {"slide": 3, "headline": "", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 4, "headline": "", "subtext": "", "visual_note": "foto_clean"},
+    {"slide": 5, "headline": "", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 6, "headline": "", "subtext": "CTA aqui", "visual_note": "logo"}
+  ],
+  "caption": "legenda completa do post (máx 150 palavras)",
+  "hashtags": ["tennis", "ATP", "cafecomtenis"]
+}

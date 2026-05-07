@@ -1,0 +1,24 @@
+{
+  "player": "Ben Shelton",
+  "slug": "ben-shelton",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 4.0",
+      "author": "350z33",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/BenShelton2022USOpen.jpg/960px-BenShelton2022USOpen.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY 4.0",
+      "author": "Partynia\n\nderivative work: Kacir",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/BMW_Open_2025_Einzelfinale_%28cropped%29.jpg/960px-BMW_Open_2025_Einzelfinale_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

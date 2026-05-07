@@ -1,0 +1,27 @@
+{
+  "name": "Café com Tênis",
+  "handle": "@cafecomteniss",
+  "email": "cafecomtenis@gmail.com",
+  "colors": {
+    "background": "#0A0A0A",
+    "accent": "#C8F135",
+    "white": "#FFFFFF",
+    "gray": "#AAAAAA",
+    "dark_overlay": "rgba(0,0,0,0.75)"
+  },
+  "fonts": {
+    "title": "Bebas Neue",
+    "body": "DM Sans",
+    "google_fonts_url": "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700&display=swap"
+  },
+  "formats": {
+    "feed_square": {"width": 1080, "height": 1080},
+    "feed_portrait": {"width": 1080, "height": 1350},
+    "story": {"width": 1080, "height": 1920},
+    "carousel_slide": {"width": 1080, "height": 1080}
+  },
+  "posting_schedule": {
+    "peak_hours": ["07:00", "12:00", "19:00", "21:00"],
+    "timezone": "America/Sao_Paulo"
+  }
+}

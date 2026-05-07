@@ -1,0 +1,24 @@
+{
+  "player": "Holger Rune",
+  "slug": "holger-rune",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 4.0",
+      "author": "Hameltion",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Holger_Rune_%282023_US_Open%29_04.jpg/960px-Holger_Rune_%282023_US_Open%29_04.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY 4.0",
+      "author": "LHC88",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Rune_2023.png/960px-Rune_2023.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

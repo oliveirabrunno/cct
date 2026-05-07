@@ -1,0 +1,24 @@
+{
+  "player": "Mirra Andreeva",
+  "slug": "mirra-andreeva",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 4.0",
+      "author": "Like tears in rain",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Mirra_Andreeva%2C_2024_Summer_Olympics_women%27s_doubles_tennis_tournament%2C_2024-08-04_%28114%29_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 4.0",
+      "author": "Like tears in rain",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Sara_Errani_-_Jasmine_Paolini_vs._Mirra_Andreeva_-_Diana_Shnaider%2C_2024_Summer_Olympics_women%27s_doubles_tennis_tournament%2C_2024-08-04_%2810%29.jpg/960px-Sara_Errani_-_Jasmine_Paolini_vs._Mirra_Andreeva_-_Diana_Shnaider%2C_2024_Summer_Olympics_women%27s_doubles_tennis_tournament%2C_2024-08-04_%2810%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

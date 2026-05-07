@@ -1,0 +1,24 @@
+{
+  "player": "Stefanos Tsitsipas",
+  "slug": "stefanos-tsitsipas",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 4.0",
+      "author": "Hameltion",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Stefanos_Tsitsipas_%282023_US_Open%29_04.jpg/960px-Stefanos_Tsitsipas_%282023_US_Open%29_04.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC0",
+      "author": "DarDarCH",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Stefanos_Tsitsipas_vs_Daniel_Evans%2C_2024_Summer_Olympics_men%27s_simple_tennis_tournament%2C_2024-07-29.jpg/960px-Stefanos_Tsitsipas_vs_Daniel_Evans%2C_2024_Summer_Olympics_men%27s_simple_tennis_tournament%2C_2024-07-29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "player": "Victoria Azarenka",
+  "slug": "victoria-azarenka",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "Carine06 from UK",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Victoria_Azarenka_%2845896970922%29.jpg/960px-Victoria_Azarenka_%2845896970922%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "Christian Mesiano",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Victoria_Azarenka_%2816650950708%29.jpg/960px-Victoria_Azarenka_%2816650950708%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

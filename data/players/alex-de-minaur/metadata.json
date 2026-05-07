@@ -1,0 +1,24 @@
+{
+  "player": "Alex de Minaur",
+  "slug": "alex-de-minaur",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "Keith Allison from Hanover, MD, USA",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Alex_De_Minaur_%2828938823637%29.jpg/960px-Alex_De_Minaur_%2828938823637%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "Keith Allison from Hanover, MD, USA",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Alex_De_Minaur_%2828940702537%29.jpg/960px-Alex_De_Minaur_%2828940702537%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

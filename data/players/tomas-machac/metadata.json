@@ -1,0 +1,24 @@
+{
+  "player": "Tomas Machac",
+  "slug": "tomas-machac",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "si.robi",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Machac_MLC22.jpg/960px-Machac_MLC22.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "si.robi",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Machac_WMQ23_%2853062093175%29.jpg/960px-Machac_WMQ23_%2853062093175%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

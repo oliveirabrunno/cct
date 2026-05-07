@@ -1,0 +1,24 @@
+{
+  "player": "Andrey Rublev",
+  "slug": "andrey-rublev",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 4.0",
+      "author": "Hameltion",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Andrey_Rublev_%282023_US_Open%29_12.jpg/960px-Andrey_Rublev_%282023_US_Open%29_12.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "Carine06 from UK",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Andrey_Rublev_%2830225311827%29.jpg/960px-Andrey_Rublev_%2830225311827%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

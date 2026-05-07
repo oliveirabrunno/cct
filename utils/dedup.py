@@ -1,0 +1,89 @@
+"""
+Deduplicação de posts via SQLite.
+Evita publicar o mesmo conteúdo duas vezes nas últimas 72h.
+"""
+
+import hashlib
+import sqlite3
+from datetime import datetime, timedelta
+from pathlib import Path
+from utils.logger import get_logger
+
+log = get_logger(__name__)
+
+DB_PATH = Path("data/database.sqlite")
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+
+def _get_conn() -> sqlite3.Connection:
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS posts (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            content_hash TEXT UNIQUE NOT NULL,
+            post_type    TEXT,
+            player       TEXT,
+            description  TEXT,
+            published_at TEXT NOT NULL,
+            ig_post_id   TEXT
+        )
+    """)
+    conn.commit()
+    return conn
+
+
+def content_hash(post_type: str, player: str, extra: str = "") -> str:
+    raw = f"{post_type}:{player.lower().strip()}:{extra.lower().strip()}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+
+def is_duplicate(post_type: str, player: str, extra: str = "", hours: int = 72) -> bool:
+    h = content_hash(post_type, player, extra)
+    cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
+
+    with _get_conn() as conn:
+        row = conn.execute(
+            "SELECT id FROM posts WHERE content_hash = ? AND published_at > ?",
+            (h, cutoff)
+        ).fetchone()
+
+    if row:
+        log.info(f"Duplicado detectado: {post_type}/{player} (hash {h})")
+        return True
+    return False
+
+
+def register_post(
+    post_type: str,
+    player: str,
+    extra: str = "",
+    ig_post_id: str = "",
+    description: str = "",
+) -> None:
+    h = content_hash(post_type, player, extra)
+    with _get_conn() as conn:
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO posts (content_hash, post_type, player, description, published_at, ig_post_id) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (h, post_type, player, description, datetime.now().isoformat(), ig_post_id)
+            )
+            conn.commit()
+            log.info(f"Post registrado: {post_type}/{player} → {h}")
+        except sqlite3.IntegrityError:
+            pass
+
+
+def get_recent_posts(hours: int = 48) -> list[dict]:
+    cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
+    with _get_conn() as conn:
+        rows = conn.execute(
+            "SELECT post_type, player, description, published_at, ig_post_id "
+            "FROM posts WHERE published_at > ? ORDER BY published_at DESC",
+            (cutoff,)
+        ).fetchall()
+    return [
+        {"post_type": r[0], "player": r[1], "description": r[2],
+         "published_at": r[3], "ig_post_id": r[4]}
+        for r in rows
+    ]

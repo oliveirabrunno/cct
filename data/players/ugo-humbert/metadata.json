@@ -1,0 +1,24 @@
+{
+  "player": "Ugo Humbert",
+  "slug": "ugo-humbert",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "si.robi",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Humbert_MCM22_%2813%29_%2852036659734%29.jpg/960px-Humbert_MCM22_%2813%29_%2852036659734%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY 4.0",
+      "author": "LHC88",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Humbert_Djoko_2019.png/960px-Humbert_Djoko_2019.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

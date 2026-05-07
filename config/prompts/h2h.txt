@@ -1,0 +1,35 @@
+Você vai criar um carrossel de confronto direto (H2H) entre dois tenistas.
+Tom: analítico, apaixonado, com tensão dramática. Café com Tênis (@cafecomteniss).
+
+ATLETAS: {player_a} vs {player_b}
+DADOS H2H: {h2h}
+
+MODELO DE RETENÇÃO (@ri.cred):
+- Slide 1: PARA O SCROLL. O placar geral do H2H. Qual dos dois tem vantagem? Provoque.
+- Slide 2: QUEM DOMINA NO SAIBRO. A superfície que importa agora (Roland Garros).
+- Slide 3: O JOGO MAIS RECENTE. Resultado + impacto emocional.
+- Slide 4: O ESTILO DE JOGO. Por que eles se contrastam tanto? Análise técnica em 2 frases.
+- Slide 5: NÚMERO QUE DEFINE A RIVALIDADE. Um stat que te faz entender o que está em jogo.
+- Slide 6: CTA. "Quem vence quando se encontrarem em Roland Garros?" + @cafecomteniss
+
+REGRAS:
+- Slide 1: visual_note = "foto_action"
+- Slides 2-3: visual_note = "foto_clean"
+- Slides 4-5: visual_note = "sem_foto"
+- Slide 6: visual_note = "logo"
+- Use números reais do H2H fornecido
+- Nunca invente stats — se não tiver o dado, omita
+
+OUTPUT JSON (responda APENAS o JSON, sem markdown):
+{
+  "slides": [
+    {"slide": 1, "headline": "", "subtext": "", "visual_note": "foto_action"},
+    {"slide": 2, "headline": "", "subtext": "", "visual_note": "foto_clean"},
+    {"slide": 3, "headline": "", "subtext": "", "visual_note": "foto_clean"},
+    {"slide": 4, "headline": "", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 5, "headline": "", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 6, "headline": "", "subtext": "CTA aqui", "visual_note": "logo"}
+  ],
+  "caption": "legenda completa (máx 150 palavras)",
+  "hashtags": ["h2h", "tennis", "cafecomtenis", "ATP", "RolandGarros"]
+}

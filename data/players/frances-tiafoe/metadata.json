@@ -1,0 +1,24 @@
+{
+  "player": "Frances Tiafoe",
+  "slug": "frances-tiafoe",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "Carine06 from UK",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Frances_Tiafoe_%2832012869247%29.jpg/960px-Frances_Tiafoe_%2832012869247%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "All-Pro Reels",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Frances_Tiafoe_2022.jpg/960px-Frances_Tiafoe_2022.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

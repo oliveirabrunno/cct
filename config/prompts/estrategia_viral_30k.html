@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Café com Tênis — Estratégia Viral 30k/mês</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --ink: #0A0A08;
+  --bg: #F7F4EE;
+  --card: #FFFFFF;
+  --lime: #B8E000;
+  --clay: #C84B2F;
+  --grass: #2D6A3F;
+  --hard: #1D4E8F;
+  --muted: #8A8478;
+  --border: #E2DDD4;
+  --dark: #111110;
+}
+body { background:var(--bg); color:var(--ink); font-family:'Syne',sans-serif; line-height:1.6; }
+
+/* HEADER */
+header {
+  background: var(--dark);
+  color: #fff;
+  padding: 64px 56px 48px;
+  position: relative;
+  overflow: hidden;
+}
+header::before {
+  content: '30K';
+  position: absolute;
+  right: -20px; top: -30px;
+  font-family: 'Instrument Serif', serif;
+  font-size: 280px;
+  color: rgba(255,255,255,0.03);
+  line-height: 1;
+  pointer-events: none;
+}
+.h-tag {
+  font-family: 'JetBrains Mono';
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--lime);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.h-tag::before { content:''; width:32px; height:1px; background:var(--lime); }
+h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(44px, 6vw, 88px);
+  line-height: 1.0;
+  letter-spacing: -1px;
+  margin-bottom: 16px;
+}
+h1 em { color: var(--lime); font-style: italic; }
+.h-sub { font-size: 15px; color: #888; max-width: 560px; margin-bottom: 40px; line-height: 1.7; font-family: 'JetBrains Mono'; }
+.h-stats { display:flex; gap:48px; flex-wrap:wrap; }
+.hstat-val { font-family:'Instrument Serif',serif; font-size:48px; color:var(--lime); line-height:1; }
+.hstat-label { font-family:'JetBrains Mono'; font-size:10px; color:#555; text-transform:uppercase; letter-spacing:2px; margin-top:4px; }
+
+/* MAIN */
+main { max-width:1280px; margin:0 auto; padding:56px; }
+.section { margin-bottom:72px; }
+.sec-head {
+  display:flex; align-items:center; gap:16px;
+  margin-bottom:28px;
+  padding-bottom:14px;
+  border-bottom:1px solid var(--border);
+}
+.sec-n {
+  font-family:'JetBrains Mono'; font-size:10px;
+  background:var(--ink); color:var(--lime);
+  padding:3px 10px; letter-spacing:1px;
+}
+.sec-title { font-size:22px; font-weight:800; letter-spacing:-0.5px; }
+
+/* PHILOSOPHY BLOCK */
+.philosophy {
+  background: var(--dark);
+  padding: 40px 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+}
+.phil-col-title {
+  font-family:'JetBrains Mono';
+  font-size:10px; text-transform:uppercase;
+  letter-spacing:2px; color:var(--lime);
+  margin-bottom:16px;
+}
+.phil-rule {
+  padding:12px 0;
+  border-bottom:1px solid #222;
+  font-size:14px; color:#CCC;
+  display:flex; gap:12px; align-items:flex-start;
+  line-height:1.5;
+}
+.phil-rule:last-child { border-bottom:none; }
+.phil-rule-icon { color:var(--lime); flex-shrink:0; font-size:12px; margin-top:2px; }
+.phil-rule strong { color:#fff; }
+
+/* CONTENT TYPES GRID */
+.types-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+.type-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  padding:24px;
+  position:relative;
+  overflow:hidden;
+}
+.type-card::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  height:3px;
+}
+.type-card.clay::before { background:var(--clay); }
+.type-card.grass::before { background:var(--grass); }
+.type-card.hard::before { background:var(--hard); }
+.type-card.lime::before { background:var(--lime); }
+.type-card.gold::before { background:#E8C832; }
+
+.type-freq {
+  font-family:'JetBrains Mono'; font-size:10px;
+  padding:2px 8px; margin-bottom:12px;
+  display:inline-block; letter-spacing:1px;
+}
+.type-freq.high { background:rgba(200,75,47,0.1); color:var(--clay); }
+.type-freq.med { background:rgba(29,78,143,0.1); color:var(--hard); }
+.type-freq.max { background:rgba(184,224,0,0.15); color:#5A8800; }
+
+.type-name { font-size:17px; font-weight:800; margin-bottom:8px; }
+.type-desc { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:12px; }
+.type-hooks { }
+.hook-item {
+  font-family:'JetBrains Mono'; font-size:11px;
+  color:var(--ink); padding:5px 0;
+  border-bottom:1px dashed var(--border);
+  display:flex; gap:8px;
+}
+.hook-item:last-child { border-bottom:none; }
+.hook-item::before { content:'→'; color:var(--clay); flex-shrink:0; }
+
+/* CALENDAR */
+.cal-week {
+  display:grid;
+  grid-template-columns:80px repeat(7,1fr);
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+.cal-header {
+  background:var(--dark); color:#fff;
+  font-family:'JetBrains Mono'; font-size:10px;
+  text-transform:uppercase; letter-spacing:1px;
+  padding:10px 12px;
+  border-right:1px solid #333;
+  text-align:center;
+}
+.cal-header:first-child { background:transparent; border:none; }
+.cal-slot-label {
+  font-family:'JetBrains Mono'; font-size:10px;
+  color:var(--muted); text-transform:uppercase;
+  letter-spacing:1px; padding:12px 10px;
+  border-right:1px solid var(--border);
+  border-top:1px solid var(--border);
+  display:flex; align-items:center;
+  background:rgba(0,0,0,0.02);
+}
+.cal-cell {
+  padding:8px;
+  border-right:1px solid var(--border);
+  border-top:1px solid var(--border);
+  display:flex; flex-direction:column; gap:4px;
+}
+.cal-cell:last-child { border-right:none; }
+.post-pill {
+  font-size:10px; padding:4px 7px;
+  line-height:1.3; border-radius:3px;
+  font-family:'JetBrains Mono';
+}
+.pp-reel { background:rgba(29,78,143,0.12); color:var(--hard); }
+.pp-carousel { background:rgba(200,75,47,0.1); color:var(--clay); }
+.pp-card { background:rgba(184,224,0,0.15); color:#5A8800; }
+.pp-story { background:rgba(232,200,50,0.15); color:#8A7000; }
+.pp-meme { background:rgba(45,106,63,0.12); color:var(--grass); }
+
+/* PROMPT BLOCK */
+.prompt-wrap {
+  background:var(--dark);
+  border-left:4px solid var(--lime);
+  padding:28px 32px;
+}
+.prompt-label {
+  font-family:'JetBrains Mono'; font-size:10px;
+  text-transform:uppercase; letter-spacing:2px;
+  color:var(--lime); margin-bottom:16px;
+}
+.prompt-body {
+  font-family:'JetBrains Mono'; font-size:12px;
+  color:#A0A090; line-height:2.0;
+  white-space:pre-wrap;
+}
+.prompt-body .kw { color:var(--lime); }
+.prompt-body .val { color:#FB923C; }
+.prompt-body .co { color:#4A7A5A; }
+
+/* ALGO SIGNALS */
+.signals { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.signal-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  padding:20px;
+  text-align:center;
+}
+.signal-icon { font-size:32px; margin-bottom:10px; display:block; }
+.signal-name { font-size:13px; font-weight:700; margin-bottom:4px; }
+.signal-desc { font-size:11px; color:var(--muted); line-height:1.5; }
+.signal-weight {
+  font-family:'JetBrains Mono'; font-size:20px;
+  font-weight:700; color:var(--clay);
+  display:block; margin-top:8px;
+}
+
+/* TRIGGERS */
+.triggers { display:grid; grid-template-columns:repeat(3,1fr); gap:0; border:1px solid var(--border); }
+.trigger {
+  padding:24px;
+  border-right:1px solid var(--border);
+}
+.trigger:last-child { border-right:none; }
+.trigger-name { font-size:14px; font-weight:800; margin-bottom:6px; }
+.trigger-desc { font-size:12px; color:var(--muted); line-height:1.6; margin-bottom:12px; }
+.trigger-example {
+  font-family:'JetBrains Mono'; font-size:11px;
+  color:var(--clay); font-style:italic;
+  padding:8px 10px;
+  background:rgba(200,75,47,0.06);
+  border-left:2px solid var(--clay);
+  line-height:1.6;
+}
+
+/* GITHUB ACTIONS */
+.actions-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.action-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  padding:20px;
+}
+.action-cron {
+  font-family:'JetBrains Mono'; font-size:11px;
+  color:var(--hard); background:rgba(29,78,143,0.08);
+  padding:3px 8px; display:inline-block;
+  margin-bottom:10px;
+}
+.action-name { font-size:14px; font-weight:800; margin-bottom:6px; }
+.action-desc { font-size:12px; color:var(--muted); line-height:1.5; }
+.action-output {
+  margin-top:10px; font-family:'JetBrains Mono'; font-size:10px;
+  color:var(--grass); display:flex; align-items:center; gap:6px;
+}
+.action-output::before { content:'→'; }
+
+/* ROADMAP */
+.roadmap { display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--border); }
+.road-week {
+  padding:24px 20px;
+  border-right:1px solid var(--border);
+}
+.road-week:last-child { border-right:none; }
+.road-week-label {
+  font-family:'JetBrains Mono'; font-size:9px;
+  text-transform:uppercase; letter-spacing:2px;
+  color:var(--muted); margin-bottom:6px;
+}
+.road-week-title { font-size:16px; font-weight:800; margin-bottom:12px; }
+.road-item {
+  font-size:12px; color:var(--muted);
+  padding:6px 0; border-bottom:1px solid var(--border);
+  display:flex; gap:8px;
+}
+.road-item:last-child { border-bottom:none; }
+.road-item::before { content:'○'; color:var(--clay); flex-shrink:0; }
+.road-goal {
+  margin-top:16px; padding:10px;
+  background:var(--dark); color:var(--lime);
+  font-family:'JetBrains Mono'; font-size:13px;
+  font-weight:700; text-align:center;
+}
+
+footer {
+  border-top:1px solid var(--border);
+  padding:24px 56px;
+  display:flex; justify-content:space-between;
+  font-family:'JetBrains Mono'; font-size:11px;
+  color:var(--muted);
+}
+footer em { color:var(--clay); font-style:normal; }
+
+@media(max-width:900px) {
+  header, main { padding:32px 20px; }
+  .philosophy, .signals, .triggers, .roadmap, .actions-grid { grid-template-columns:1fr; }
+  .cal-week { grid-template-columns:60px repeat(4,1fr); overflow-x:auto; }
+  footer { flex-direction:column; gap:4px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-tag">Café com Tênis — @cafecomteniss — Estratégia Viral</div>
+  <h1>30.000<br>seguidores<br><em>em 30 dias.</em></h1>
+  <p class="h-sub">// Sistema de conteúdo dopaminérgico + automação GitHub Actions + manipulação de algoritmo — tudo documentado para o Claude Code executar.</p>
+  <div class="h-stats">
+    <div><div class="hstat-val">15+</div><div class="hstat-label">posts / dia</div></div>
+    <div><div class="hstat-val">7</div><div class="hstat-label">tipos de conteúdo</div></div>
+    <div><div class="hstat-val">~90%</div><div class="hstat-label">automatizado</div></div>
+    <div><div class="hstat-val">24/7</div><div class="hstat-label">publicação ativa</div></div>
+  </div>
+</header>
+
+<main>
+
+<!-- 01 FILOSOFIA -->
+<section class="section">
+  <div class="sec-head">
+    <span class="sec-n">01</span>
+    <span class="sec-title">Filosofia de Conteúdo Viral — Adaptado do @maestroprompts</span>
+  </div>
+  <div class="philosophy">
+    <div>
+      <div class="phil-col-title">Regras absolutas (proibido violar)</div>
+      <div class="phil-rule"><span class="phil-rule-icon">✗</span><div><strong>Proibido conteúdo neutro.</strong> Toda stat, news ou curiosidade precisa provocar reação. Admiração, choque, identificação ou discordância. Neutro não circula.</div></div>
+      <div class="phil-rule"><span class="phil-rule-icon">✗</span><div><strong>Proibido didatismo excessivo.</strong> Não é aula. É conversa entre quem entende de tênis. Tom de bar, não de professor.</div></div>
+      <div class="phil-rule"><span class="phil-rule-icon">✗</span><div><strong>Proibido depender de seguidores.</strong> Cada post precisa funcionar para quem nunca viu o perfil. Faz sentido isolado.</div></div>
+      <div class="phil-rule"><span class="phil-rule-icon">✓</span><div><strong>Emoção antes da informação.</strong> Ativar o sentimento primeiro. Lógica depois. As pessoas compartilham o que SENTEM, não o que aprendem.</div></div>
+      <div class="phil-rule"><span class="phil-rule-icon">✓</span><div><strong>Pensar como seguidor, não como criador.</strong> A pergunta é sempre: por que alguém mandaria isso no DM pra um amigo?</div></div>
+    </div>
+    <div>
+      <div class="phil-col-title">Gatilhos obrigatórios (mínimo 2 por post)</div>
+      <div class="phil-rule"><span class="phil-rule-icon">◈</span><div><strong>Identificação</strong> — "isso sou eu assistindo a final às 3h"</div></div>
+      <div class="phil-rule"><span class="phil-rule-icon">◈</span><div><strong>Validação social</strong> — "sabia disso antes de todo mundo"</div></div>
+      <div class="phil-rule"><span class="phil-rule-icon">◈</span><div><strong>Choque cognitivo</strong> — stat que contradiz o que o seguidor pensava</div></div>
+      <div class="phil-rule"><span class="phil-rule-icon">◈</span><div><strong>Utilidade imediata</strong> — dado que o seguidor usa na conversa hoje</div></div>
+      <div class="phil-rule"><span class="phil-rule-icon">◈</span><div><strong>Verdade inconveniente</strong> — opinião que divide, gera comentário</div></div>
+      <div class="phil-rule"><span class="phil-rule-icon">◈</span><div><strong>Status</strong> — "quem segue @cafecomteniss sabe mais de tênis"</div></div>
+      <div class="phil-rule"><span class="phil-rule-icon">◈</span><div><strong>Alívio emocional</strong> — humor, ironia, meme que libera tensão</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 TIPOS DE CONTEÚDO -->
+<section class="section">
+  <div class="sec-head">
+    <span class="sec-n">02</span>
+    <span class="sec-title">7 Tipos de Conteúdo — Com Hooks Virais por Tipo</span>
+  </div>
+  <div class="types-grid">
+
+    <div class="type-card clay">
+      <span class="type-freq max">5–6x / dia</span>
+      <div class="type-name">🎬 Reel de Análise / Breaking</div>
+      <div class="type-desc">Formato de maior alcance. Narração IA (ElevenLabs) + slides visuais + música. Prioridade máxima no algoritmo. Cobre resultados ao vivo, análises pós-jogo e trend topics.</div>
+      <div class="type-hooks">
+        <div class="hook-item">"Ninguém está falando sobre isso do Sinner em Roma"</div>
+        <div class="hook-item">"A stat que explica por que Fonseca vai longe"</div>
+        <div class="hook-item">"O que aconteceu em quadra que a câmera não mostrou"</div>
+        <div class="hook-item">"Em 40 segundos: por que essa final foi histórica"</div>
+      </div>
+    </div>
+
+    <div class="type-card hard">
+      <span class="type-freq max">3–4x / dia</span>
+      <div class="type-name">🎠 Carrossel de Retenção</div>
+      <div class="type-desc">Modelo ri.cred: slide 1 para o scroll, cada slide cria tensão, CTA invisível no último. Cobre H2H, chaves de torneio, estatísticas profundas e perfis de atletas.</div>
+      <div class="type-hooks">
+        <div class="hook-item">"O caminho de Alcaraz até a final. Slide 3 vai te surpreender."</div>
+        <div class="hook-item">"Djokovic vs Sinner: 5 números que definem o duelo"</div>
+        <div class="hook-item">"Fonseca em Roma: slide a slide o que esperar"</div>
+        <div class="hook-item">"Bia Haddad tem a melhor sequência da carreira. Veja os dados."</div>
+      </div>
+    </div>
+
+    <div class="type-card lime">
+      <span class="type-freq high">4–5x / dia</span>
+      <div class="type-name">📊 Card de Stat Chocante</div>
+      <div class="type-desc">Dado único que surpreende em 3 segundos. Fundo escuro, número enorme, foto do atleta, contexto mínimo. Modelo do story do Bulso aplicado ao feed.</div>
+      <div class="type-hooks">
+        <div class="hook-item">"Sinner já acumulou mais pontos que Federer no pico. Em 2026."</div>
+        <div class="hook-item">"Fonseca tem 19 anos e já é top 30. Nadal tinha 21."</div>
+        <div class="hook-item">"Swiatek perdeu 3 vezes em 2025. Três."</div>
+        <div class="hook-item">"O ace que decidiu o Roland Garros. 220km/h."</div>
+      </div>
+    </div>
+
+    <div class="type-card grass">
+      <span class="type-freq high">2–3x / dia</span>
+      <div class="type-name">🗺️ Chave de Torneio (Pré-evento)</div>
+      <div class="type-desc">Carrossel publicado antes do torneio começar com o caminho possível dos cabeças de chave até a final. Foco nos top 4 + Fonseca + Bia. Alta antecipação, alto compartilhamento.</div>
+      <div class="type-hooks">
+        <div class="hook-item">"O caminho de Fonseca em Roland Garros. Adversário provável na final?"</div>
+        <div class="hook-item">"Top 4 em Wimbledon: quem tem o caminho mais fácil?"</div>
+        <div class="hook-item">"Bia Haddad está na mesma chave de Swiatek. E agora?"</div>
+      </div>
+    </div>
+
+    <div class="type-card gold">
+      <span class="type-freq med">2x / dia</span>
+      <div class="type-name">😂 Meme / Reação Cultural</div>
+      <div class="type-desc">Humor sobre situações reais do tour. Reações de torcedores, memes de rivalidades, ironia sobre situações inusitadas. Gerado quando Reddit ou Google Trends detecta trending.</div>
+      <div class="type-hooks">
+        <div class="hook-item">"O rosto do Djokovic quando percebeu que perdeu para o Fonseca"</div>
+        <div class="hook-item">"Brasileiros às 3h da manhã assistindo o Fonseca 🫡"</div>
+        <div class="hook-item">"O árbitro de cadeira quando a bola cai 0.1mm fora"</div>
+      </div>
+    </div>
+
+    <div class="type-card clay">
+      <span class="type-freq med">2x / dia</span>
+      <div class="type-name">📅 On This Day / Curiosidade Histórica</div>
+      <div class="type-desc">Efeméride do tênis: "hoje X anos atrás". Gerado automaticamente pelo banco de dados histórico do Sackmann. Alta taxa de save (algoritmo adora).</div>
+      <div class="type-hooks">
+        <div class="hook-item">"Hoje, há 20 anos, Federer ganhou o primeiro Wimbledon."</div>
+        <div class="hook-item">"Em 2001, um jovem de 19 anos bateu Sampras em Wimbledon."</div>
+        <div class="hook-item">"O ponto mais longo da história do tênis durou 643 rebatidas."</div>
+      </div>
+    </div>
+
+    <div class="type-card hard">
+      <span class="type-freq max">Stories: 8–12x / dia</span>
+      <div class="type-name">📱 Stories (Teaser + Breaking + Poll)</div>
+      <div class="type-desc">Motor de engajamento diário. Teaser de cada post publicado, breaking news imediato pós-jogo, poll pré-jogo. Gera clique para o feed e mantém engajamento ativo.</div>
+      <div class="type-hooks">
+        <div class="hook-item">Teaser: foto atleta + stat → "detalhe no post 👆"</div>
+        <div class="hook-item">Poll: "Fonseca passa da 3ª rodada?" [Sim] [Não]</div>
+        <div class="hook-item">Breaking: "RESULTADO: Sinner 6-4 6-3. Em 58 minutos."</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- 03 CALENDÁRIO -->
+<section class="section">
+  <div class="sec-head">
+    <span class="sec-n">03</span>
+    <span class="sec-title">Calendário Semanal — Estrutura de 15+ Posts/Dia</span>
+  </div>
+  <div style="overflow-x:auto;">
+  <div class="cal-week" style="min-width:900px;">
+    <div class="cal-header"></div>
+    <div class="cal-header">SEG</div>
+    <div class="cal-header">TER</div>
+    <div class="cal-header">QUA</div>
+    <div class="cal-header">QUI</div>
+    <div class="cal-header">SEX</div>
+    <div class="cal-header">SÁB</div>
+    <div class="cal-header">DOM</div>
+
+    <div class="cal-slot-label">06:00</div>
+    <div class="cal-cell"><span class="post-pill pp-card">Ranking ATP/WTA</span><span class="post-pill pp-story">Story teaser</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">On This Day</span><span class="post-pill pp-story">Story breaking</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">Stat chocante</span><span class="post-pill pp-story">Story teaser</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">On This Day</span><span class="post-pill pp-story">Story poll</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">Stat chocante</span><span class="post-pill pp-story">Story teaser</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">Curiosidade histórica</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">Recap semanal card</span></div>
+
+    <div class="cal-slot-label">08:00</div>
+    <div class="cal-cell"><span class="post-pill pp-carousel">Chave do torneio (top 4 + BR)</span></div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: análise do dia</span></div>
+    <div class="cal-cell"><span class="post-pill pp-carousel">H2H pré-jogo</span></div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: preview torneio</span></div>
+    <div class="cal-cell"><span class="post-pill pp-carousel">Chave QF/SF</span></div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: análise SF</span></div>
+    <div class="cal-cell"><span class="post-pill pp-carousel">Carrossel recap</span></div>
+
+    <div class="cal-slot-label">10:00</div>
+    <div class="cal-cell"><span class="post-pill pp-story">Poll pré-jogo</span><span class="post-pill pp-card">Stat atleta BR</span></div>
+    <div class="cal-cell"><span class="post-pill pp-meme">Meme do tour</span></div>
+    <div class="cal-cell"><span class="post-pill pp-story">Poll pré-jogo</span><span class="post-pill pp-card">Stat curiosa</span></div>
+    <div class="cal-cell"><span class="post-pill pp-meme">Meme rivalidade</span></div>
+    <div class="cal-cell"><span class="post-pill pp-story">Poll final</span><span class="post-pill pp-card">Stats final</span></div>
+    <div class="cal-cell"><span class="post-pill pp-carousel">Carrossel perfil atleta</span></div>
+    <div class="cal-cell"><span class="post-pill pp-story">Poll semanal</span></div>
+
+    <div class="cal-slot-label">12:00</div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: curiosidade histórica</span></div>
+    <div class="cal-cell"><span class="post-pill pp-carousel">Carrossel: stats avançadas</span></div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: polêmica do tour</span></div>
+    <div class="cal-cell"><span class="post-pill pp-carousel">H2H + contexto histórico</span></div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: análise final</span></div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: SF ao vivo</span></div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: campeão da semana</span></div>
+
+    <div class="cal-slot-label">15:00</div>
+    <div class="cal-cell"><span class="post-pill pp-card">Breaking resultado</span><span class="post-pill pp-story">Story imediato</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">Breaking resultado</span><span class="post-pill pp-story">Story imediato</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">Breaking resultado</span><span class="post-pill pp-story">Story imediato</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">Breaking resultado</span><span class="post-pill pp-story">Story imediato</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">Breaking resultado</span><span class="post-pill pp-story">Story imediato</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">Breaking resultado</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">Breaking resultado</span></div>
+
+    <div class="cal-slot-label">18:00</div>
+    <div class="cal-cell"><span class="post-pill pp-carousel">Carrossel pós-jogo</span><span class="post-pill pp-story">Story teaser</span></div>
+    <div class="cal-cell"><span class="post-pill pp-carousel">Stats do jogo</span></div>
+    <div class="cal-cell"><span class="post-pill pp-meme">Meme do dia</span><span class="post-pill pp-story">Story teaser</span></div>
+    <div class="cal-cell"><span class="post-pill pp-carousel">Carrossel pós-jogo</span></div>
+    <div class="cal-cell"><span class="post-pill pp-carousel">Stats da final</span></div>
+    <div class="cal-cell"><span class="post-pill pp-carousel">Análise final completa</span></div>
+    <div class="cal-cell"><span class="post-pill pp-meme">Meme da semana</span></div>
+
+    <div class="cal-slot-label">21:00</div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: recap do dia</span><span class="post-pill pp-story">Story poll</span></div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: análise noturna</span></div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: recap do dia</span></div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: preview amanhã</span></div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: recap semana</span></div>
+    <div class="cal-cell"><span class="post-pill pp-reel">Reel: final do torneio</span></div>
+    <div class="cal-cell"><span class="post-pill pp-card">Stat do fim de semana</span></div>
+  </div>
+  </div>
+  <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+    <span style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted);">LEGENDA →</span>
+    <span class="post-pill pp-reel" style="border-radius:3px;">Reel</span>
+    <span class="post-pill pp-carousel" style="border-radius:3px;">Carrossel</span>
+    <span class="post-pill pp-card" style="border-radius:3px;">Card/Stat</span>
+    <span class="post-pill pp-story" style="border-radius:3px;">Story</span>
+    <span class="post-pill pp-meme" style="border-radius:3px;">Meme</span>
+    <p style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-left:8px;">+ Breaking automático sempre que resultado detectado pelo live_monitor</p>
+  </div>
+</section>
+
+<!-- 04 PROMPT MASTER -->
+<section class="section">
+  <div class="sec-head">
+    <span class="sec-n">04</span>
+    <span class="sec-title">Prompt Master — Claude como Engenheiro de Compartilhamento Viral</span>
+  </div>
+  <div class="prompt-wrap">
+    <div class="prompt-label">// config/prompts/viral_master.txt — Base para todos os posts</div>
+    <div class="prompt-body"><span class="co"># MODO: ENGENHEIRO DE COMPARTILHAMENTO VIRAL</span>
+<span class="co"># Canal: @cafecomteniss — Café com Tênis</span>
+<span class="co"># Missão: posts que NÃO-SEGUIDORES sentem vontade de mandar para amigos</span>
+
+<span class="kw">IDENTIDADE:</span>
+Você é o editor do @cafecomteniss. Não cria conteúdo "bom".
+Cria conteúdo que as pessoas PRECISAM compartilhar.
+O tênis é o nicho. A psicologia do share é a ferramenta.
+
+<span class="kw">ANTES DE CRIAR QUALQUER POST, RESPONDA:</span>
+1. Qual emoção principal este post ativa? <span class="val">[choque|identificação|status|alívio|curiosidade]</span>
+2. Por que um não-seguidor mandaria isso no DM?
+3. Qual gatilho está sendo ativado? <span class="val">(mín. 2 dos 7 obrigatórios)</span>
+4. O post funciona sem conhecer o perfil? <span class="val">[sim/não — se não, reescrever]</span>
+5. Qual sinal do algoritmo este post vai gerar? <span class="val">[share|save|comment|time]</span>
+
+<span class="kw">REGRAS DE ESCRITA:</span>
+- Frase 1: o dado mais impactante. Sem introdução. Sem "olá".
+- Frases curtas. Máx 12 palavras por frase.
+- Números específicos: não "muitos", mas "47 aces em um único torneio"
+- Compare com referência conhecida: "mais que Federer fez em toda a carreira"
+- NUNCA use: "incrível", "surpreendente", "top", "imperdível"
+- Tom: bar entre amigos que entendem de tênis. Não aula. Não jornal.
+- CTA INVISÍVEL: não peça follow/save. Deixe a pergunta aberta.
+  Exemplo bom: <span class="val">"E você apostaria no Fonseca contra o Sinner agora?"</span>
+  Exemplo ruim: <span class="val">"Segue o perfil para mais conteúdo!"</span>
+
+<span class="kw">FOCO ESPECIAL — BRASILEIROS:</span>
+João Fonseca e Bia Haddad têm tratamento prioritário.
+Para cada torneio que entram: gerar carrossel de chave + card de stats + reel.
+Tom de orgulho nacional sem ser piegas. Dados que mostram a grandeza objetivamente.
+
+<span class="kw">FORMATO DE OUTPUT (JSON obrigatório):</span>
+{
+  "gatilhos_ativados": <span class="val">["identificação", "choque cognitivo"]</span>,
+  "emocao_principal": <span class="val">"choque"</span>,
+  "por_que_compartilhar": <span class="val">"texto explicando o motivo psicológico"</span>,
+  "sinal_algoritmo_primario": <span class="val">"share"</span>,
+  "hook_slide1_ou_caption": <span class="val">"primeira frase do post"</span>,
+  "caption_completa": <span class="val">"legenda completa (máx 120 palavras)"</span>,
+  "hashtags": <span class="val">["#tennis", "#ATP", ...]</span>,
+  "slides": <span class="val">[{...}]</span>,
+  "story_teaser_text": <span class="val">"3 linhas máximo para o story"</span>
+}</div>
+  </div>
+</section>
+
+<!-- 05 ALGORITMO -->
+<section class="section">
+  <div class="sec-head">
+    <span class="sec-n">05</span>
+    <span class="sec-title">Sinais que o Algoritmo do Instagram Amplifica</span>
+  </div>
+  <div class="signals">
+    <div class="signal-card">
+      <span class="signal-icon">📤</span>
+      <div class="signal-name">Compartilhamento Direto</div>
+      <div class="signal-desc">Envio via DM para outros usuários. O sinal mais forte para distribuição fora dos seguidores.</div>
+      <span class="signal-weight">PESO #1</span>
+    </div>
+    <div class="signal-card">
+      <span class="signal-icon">🔖</span>
+      <div class="signal-name">Salvamento</div>
+      <div class="signal-desc">Indica utilidade futura. O algoritmo interpreta como conteúdo de alta qualidade que merece mais alcance.</div>
+      <span class="signal-weight">PESO #2</span>
+    </div>
+    <div class="signal-card">
+      <span class="signal-icon">⏱️</span>
+      <div class="signal-name">Tempo de Permanência</div>
+      <div class="signal-desc">Carrosséis com 6 slides e reels que prendem até o final são amplificados para novos públicos.</div>
+      <span class="signal-weight">PESO #3</span>
+    </div>
+    <div class="signal-card">
+      <span class="signal-icon">💬</span>
+      <div class="signal-name">Comentários Reais</div>
+      <div class="signal-desc">CTA invisível que gera debate ("e você?", pergunta aberta) ativa mais comentários que pedir explicitamente.</div>
+      <span class="signal-weight">PESO #4</span>
+    </div>
+  </div>
+  <div style="margin-top:16px">
+    <div class="triggers">
+      <div class="trigger">
+        <div class="trigger-name">🎠 Carrossel → Save + Tempo</div>
+        <div class="trigger-desc">6 slides cria tempo de permanência alto. Slide 1 para o scroll, slide 6 com pergunta gera comentário. Conteúdo "guardar para ver depois" gera save.</div>
+        <div class="trigger-example">"Slides 3 e 4 vão mudar como você vê esse H2H. Vai lá."</div>
+      </div>
+      <div class="trigger">
+        <div class="trigger-name">🎬 Reel → Share + Alcance</div>
+        <div class="trigger-desc">Reels têm distribuição prioritária para não-seguidores. Narração IA + texto em tela + música gera retenção. Hook nos primeiros 2 segundos é decisivo.</div>
+        <div class="trigger-example">"Ninguém calculou isso antes. Em 40 segundos você entende."</div>
+      </div>
+      <div class="trigger">
+        <div class="trigger-name">📸 Card Stat → Share DM</div>
+        <div class="trigger-desc">Dado que contradiz expectativa → pessoa manda para amigo no DM. "Se dá print, dá share." Visual limpo, número grande, contexto mínimo.</div>
+        <div class="trigger-example">"Fonseca. 19 anos. Top 29. Nadal chegou lá com 21."</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 GITHUB ACTIONS -->
+<section class="section">
+  <div class="sec-head">
+    <span class="sec-n">06</span>
+    <span class="sec-title">GitHub Actions — Automação 24/7 Sem Servidor</span>
+  </div>
+  <div class="actions-grid">
+    <div class="action-card">
+      <div class="action-cron">CRON: 0 9 * * * (06:00 BRT)</div>
+      <div class="action-name">pipeline_daily.yml</div>
+      <div class="action-desc">Pipeline principal. Scraping de todas as fontes → Claude gera conteúdo do dia → Puppeteer renderiza visuals → agendamento nos horários de pico.</div>
+      <div class="action-output">8–10 posts gerados e agendados</div>
+    </div>
+    <div class="action-card">
+      <div class="action-cron">CRON: */30 * * * * (cada 30min)</div>
+      <div class="action-name">live_monitor.yml</div>
+      <div class="action-desc">Monitora Flashscore. Quando jogo termina → gera card de resultado imediato → story breaking → carrossel de análise em fila para 30min depois.</div>
+      <div class="action-output">Breaking posts automáticos 24/7</div>
+    </div>
+    <div class="action-card">
+      <div class="action-cron">CRON: */120 * * * * (cada 2h)</div>
+      <div class="action-name">trend_detector.yml</div>
+      <div class="action-desc">Google News RSS + Reddit r/tennis + Google Trends. Score composto. Se atleta passa threshold → gera carrossel trend topic com prioridade máxima imediata.</div>
+      <div class="action-output">Carrossel viral em ~8 min do spike</div>
+    </div>
+    <div class="action-card">
+      <div class="action-cron">CRON: 0 11 * * 1 (seg 08:00 BRT)</div>
+      <div class="action-name">weekly_ranking.yml</div>
+      <div class="action-desc">Novo ranking ATP/WTA toda segunda. Carrossel com top 10 + maiores subidas/quedas + destaque para Fonseca e Bia. Story teaser automático.</div>
+      <div class="action-output">Carrossel + story ranking</div>
+    </div>
+    <div class="action-card">
+      <div class="action-cron">CRON: 0 11 * * * (08:00 BRT)</div>
+      <div class="action-name">on_this_day.yml</div>
+      <div class="action-desc">Busca no banco Sackmann eventos históricos do dia. Se há algo relevante, gera card automaticamente. 365 posts/ano pré-geráveis.</div>
+      <div class="action-output">Card histórico diário automático</div>
+    </div>
+    <div class="action-card">
+      <div class="action-cron">CRON: antes de cada torneio</div>
+      <div class="action-name">draw_analyzer.yml</div>
+      <div class="action-desc">Quando chave de torneio é sorteada: analisa caminho dos top 4 + Fonseca + Bia até a final. Gera carrossel de chave para cada atleta monitorado.</div>
+      <div class="action-output">6 carrosséis de chave por torneio</div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 ROADMAP 30 DIAS -->
+<section class="section">
+  <div class="sec-head">
+    <span class="sec-n">07</span>
+    <span class="sec-title">Roadmap 30 Dias → 30k Seguidores</span>
+  </div>
+  <div class="roadmap">
+    <div class="road-week">
+      <div class="road-week-label">Dias 1–7</div>
+      <div class="road-week-title">Fundação</div>
+      <div class="road-item">Pipeline básico rodando</div>
+      <div class="road-item">Setup de imagens top 50 ATP/WTA</div>
+      <div class="road-item">3 templates de carrossel prontos</div>
+      <div class="road-item">GitHub Actions diário ativo</div>
+      <div class="road-item">Publicar 10+ posts/dia</div>
+      <div class="road-item">Roland Garros começa (25/mai)</div>
+      <div class="road-item">Seguir top 500 perfis do nicho</div>
+      <div class="road-goal">Meta: 1.000 seg</div>
+    </div>
+    <div class="road-week">
+      <div class="road-week-label">Dias 8–15</div>
+      <div class="road-week-title">Tração</div>
+      <div class="road-item">Reels com ElevenLabs ativos</div>
+      <div class="road-item">Live monitor 30min rodando</div>
+      <div class="road-item">Trend detector ativo</div>
+      <div class="road-item">Cobertura ao vivo Roland Garros</div>
+      <div class="road-item">Foco em Fonseca (maior trend BR)</div>
+      <div class="road-item">15+ posts/dia consistente</div>
+      <div class="road-item">Ajustar prompts por engajamento</div>
+      <div class="road-goal">Meta: 8.000 seg</div>
+    </div>
+    <div class="road-week">
+      <div class="road-week-label">Dias 16–23</div>
+      <div class="road-week-title">Escala</div>
+      <div class="road-item">Identificar formatos top performers</div>
+      <div class="road-item">Dobrar produção desses formatos</div>
+      <div class="road-item">Stories com poll todas as manhãs</div>
+      <div class="road-item">Cobertura de QF / SF / Final RG</div>
+      <div class="road-item">Primeiro Reel com 50k+ views</div>
+      <div class="road-item">Engajamento manual 30min/dia</div>
+      <div class="road-goal">Meta: 18.000 seg</div>
+    </div>
+    <div class="road-week">
+      <div class="road-week-label">Dias 24–30</div>
+      <div class="road-week-title">Consolidação</div>
+      <div class="road-item">Final Roland Garros (cobertura total)</div>
+      <div class="road-item">Pós-RG: stats + recordes + análises</div>
+      <div class="road-item">Primeiro gifting / DM para marcas</div>
+      <div class="road-item">Pipeline 90% autônomo validado</div>
+      <div class="road-item">Análise: o que mais viralizou</div>
+      <div class="road-item">Setup para Wimbledon (julho)</div>
+      <div class="road-goal">Meta: 30.000 seg 🎾</div>
+    </div>
+  </div>
+</section>
+
+<!-- PROMPT FINAL PARA CLAUDE CODE -->
+<section class="section">
+  <div class="sec-head">
+    <span class="sec-n">08</span>
+    <span class="sec-title">Prompt Final — Cole no Claude Code para Iniciar</span>
+  </div>
+  <div class="prompt-wrap">
+    <div class="prompt-label">// Cole isso como primeira mensagem no Claude Code</div>
+    <div class="prompt-body"><span class="kw">Você vai construir o sistema de automação do @cafecomteniss.</span>
+
+Leia o CLAUDE_CODE_BRIEFING_v4.md antes de qualquer coisa.
+
+<span class="co"># CONTEXTO ESTRATÉGICO ADICIONAL:</span>
+A meta é 30.000 seguidores em 30 dias partindo do zero.
+O motor é quantidade + qualidade + velocidade + psicologia do compartilhamento.
+Roland Garros começa em <span class="val">25/05/2026</span> — esse é o lançamento real do canal.
+
+<span class="co"># FILOSOFIA QUE DEVE ESTAR EM TODOS OS PROMPTS DO CLAUDE API:</span>
+- Cada post precisa ativar 2+ gatilhos: identificação, choque, status, utilidade, verdade inconveniente
+- Pensar como não-seguidor: "por que eu mandaria isso para um amigo?"
+- CTA invisível: nunca pedir follow/save explicitamente
+- Fonseca e Bia Haddad = tratamento prioritário em todos os torneios
+
+<span class="co"># VOLUME ALVO:</span>
+15+ posts/dia = 3–4 reels + 3–4 carrosséis + 4–5 cards + 8–12 stories
+
+<span class="co"># COMEÇAR POR:</span>
+Semana 1 do briefing. Primeiro módulo: estrutura de pastas + wikimedia.py + setup_player_images.py
+
+<span class="co"># PERGUNTA ANTES DE CODIFICAR:</span>
+Confirme que entendeu o projeto e me diga qual será o primeiro arquivo que vai criar.</div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div>☕🎾 <em>@cafecomteniss</em> — Estratégia Viral 30k/30 dias</div>
+  <div>Gerado com Claude — Maio <em>2026</em></div>
+</footer>
+
+</body>
+</html>

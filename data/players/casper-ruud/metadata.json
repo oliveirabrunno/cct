@@ -1,0 +1,15 @@
+{
+  "player": "Casper Ruud",
+  "slug": "casper-ruud",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Ruud_RG22_%2858%29_%2852144535415%29.jpg/960px-Ruud_RG22_%2858%29_%2852144535415%29.jpg",
+      "downloaded_at": "2026-05-07"
+    }
+  ]
+}

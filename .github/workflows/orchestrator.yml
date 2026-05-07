@@ -1,0 +1,90 @@
+name: Pipeline Principal — 09h BRT
+
+# Pipeline diário principal: scraping de trends → gera carrossel + story + reel
+# Também cobre lançamento Roland Garros e chaveamento
+# Roda às 09:00 BRT (12:00 UTC) todos os dias
+
+on:
+  schedule:
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Modo: daily | trends | ranking | rg-launch | draw-path | stories"
+        required: false
+        default: "daily"
+
+concurrency:
+  group: orchestrator-daily
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: pip-${{ runner.os }}-
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium
+          restore-keys: playwright-${{ runner.os }}-
+
+      - name: Install system deps
+        run: sudo apt-get install -y ffmpeg --no-install-recommends
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Install Node deps
+        run: npm ci
+
+      - name: Install Playwright (chromium only)
+        run: python -m playwright install chromium --with-deps
+
+      - name: Executar pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
+          PAGE_ID: ${{ secrets.PAGE_ID }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+        run: python orchestrator.py ${{ github.event.inputs.mode || 'daily' }}
+
+      - name: Upload output
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pipeline-${{ github.event.inputs.mode || 'daily' }}-${{ github.run_id }}
+          path: output/queue/
+          retention-days: 7

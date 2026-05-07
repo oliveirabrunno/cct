@@ -1,0 +1,15 @@
+{
+  "player": "Aryna Sabalenka",
+  "slug": "aryna-sabalenka",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Aryna_Sabalenka_Miami_Open_Final.jpg/960px-Aryna_Sabalenka_Miami_Open_Final.jpg",
+      "downloaded_at": "2026-05-07"
+    }
+  ]
+}

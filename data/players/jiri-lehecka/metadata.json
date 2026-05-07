@@ -1,0 +1,24 @@
+{
+  "player": "Jiri Lehecka",
+  "slug": "jiri-lehecka",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 4.0",
+      "author": "Hameltion",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Ji%C5%99%C3%AD_Lehe%C4%8Dka_%282023_US_Open%29_01.jpg/960px-Ji%C5%99%C3%AD_Lehe%C4%8Dka_%282023_US_Open%29_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY 2.0",
+      "author": "Flic's Pics Experiment",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Ji%C5%99%C3%AD_Lehe%C4%8Dka_ABN_AMRO_Open_2024_%281%29.jpg/960px-Ji%C5%99%C3%AD_Lehe%C4%8Dka_ABN_AMRO_Open_2024_%281%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

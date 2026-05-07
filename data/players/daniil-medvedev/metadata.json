@@ -1,0 +1,24 @@
+{
+  "player": "Daniil Medvedev",
+  "slug": "daniil-medvedev",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY 2.0",
+      "author": "Amaury Laporte",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Daniil_Medvedev_Practicing_Tennis_01.jpg/960px-Daniil_Medvedev_Practicing_Tennis_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY 2.0",
+      "author": "Amaury Laporte",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Daniil_Medvedev_Practicing_Tennis_02.jpg/960px-Daniil_Medvedev_Practicing_Tennis_02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

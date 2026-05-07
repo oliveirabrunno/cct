@@ -1,0 +1,33 @@
+# Claude API
+anthropic>=0.25.0
+
+# Scraping
+playwright>=1.44.0
+beautifulsoup4>=4.12.0
+requests>=2.31.0
+feedparser>=6.0.11
+lxml>=5.2.0
+
+# Data
+pandas>=2.2.0
+numpy>=1.26.0
+
+# Imagens
+Pillow>=10.3.0
+
+# TTS
+edge-tts>=6.1.9
+gtts>=2.5.1
+
+# Agendamento e utils
+python-dotenv>=1.0.0
+loguru>=0.7.2
+SQLAlchemy>=2.0.0
+aiosqlite>=0.20.0
+
+# Async
+aiohttp>=3.9.0
+aiofiles>=23.2.0
+
+# APScheduler
+APScheduler>=3.10.0

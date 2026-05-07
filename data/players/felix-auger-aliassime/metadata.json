@@ -1,0 +1,24 @@
+{
+  "player": "Felix Auger-Aliassime",
+  "slug": "felix-auger-aliassime",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY 3.0",
+      "author": "ZooTennis.com",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/0/03/Felix_Auger_Aliassime_2015.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 4.0",
+      "author": "Beyond My Ken",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/2021_US_Open_Armstrong_Alcaraz_v._Auger-Aliassime_semi_warm-up.jpg/960px-2021_US_Open_Armstrong_Alcaraz_v._Auger-Aliassime_semi_warm-up.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

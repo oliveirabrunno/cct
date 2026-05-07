@@ -1,0 +1,15 @@
+{
+  "player": "Coco Gauff",
+  "slug": "coco-gauff",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Coco_Gauff_Miami_Open.jpg/960px-Coco_Gauff_Miami_Open.jpg",
+      "downloaded_at": "2026-05-07"
+    }
+  ]
+}

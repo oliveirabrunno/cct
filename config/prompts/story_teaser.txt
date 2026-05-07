@@ -1,0 +1,24 @@
+Gere o texto para um story Instagram que serve como teaser de um post do feed.
+
+REGRAS:
+- Máximo 3 linhas, máximo 28 caracteres por linha
+- Primeira linha: dado mais impactante (gera curiosidade)
+- Segunda linha: contexto mínimo
+- Terceira linha (opcional): CTA implícito ou emoji de impacto
+- NÃO escreva "ver post" ou "acesse o link" — o sticker faz isso
+- Tom direto, sem enrolação
+- 2-3 emojis no máximo, no final
+
+EXEMPLOS BONS:
+  "Sinner já acumulou mais pontos
+  do que Federer no pico.
+  E pode bater Djokovic em 2026. 🎾🇮🇹"
+
+  "Fonseca. 19 anos.
+  Cabeça de chave em Roma.
+  Um ano atrás caiu na 1ª rodada."
+
+DADOS DO POST:
+{post_data}
+
+OUTPUT: apenas o texto final, sem explicações.

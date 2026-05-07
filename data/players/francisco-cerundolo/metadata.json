@@ -1,0 +1,24 @@
+{
+  "player": "Francisco Cerundolo",
+  "slug": "francisco-cerundolo",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "si.robi",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Cerundolo_MCM23_%2821%29_%2852883527185%29_%28cropped%29.jpg/960px-Cerundolo_MCM23_%2821%29_%2852883527185%29_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 3.0",
+      "author": "jmmuguerza",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Francisco_Cerundolo_-_Wimbledon_2022_%2828%29.jpg/960px-Francisco_Cerundolo_-_Wimbledon_2022_%2828%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

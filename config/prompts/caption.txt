@@ -1,0 +1,14 @@
+Gere uma legenda para Instagram sobre {post_type}.
+
+Dados do post:
+{data}
+
+REGRAS:
+- Máximo 150 palavras
+- Primeira frase: gancho forte (dado ou pergunta impactante)
+- Tom: direto, apaixonado, sem clichê
+- Português do Brasil
+- Inclua 3-5 hashtags relevantes ao final (linha separada)
+- Não repita a headline do slide 1 literalmente
+
+Retorne apenas o texto da legenda, sem explicações.

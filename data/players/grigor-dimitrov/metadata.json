@@ -1,0 +1,24 @@
+{
+  "player": "Grigor Dimitrov",
+  "slug": "grigor-dimitrov",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 4.0",
+      "author": "Hameltion",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Grigor_Dimitrov_%282023_DC_Open%29_01.jpg/960px-Grigor_Dimitrov_%282023_DC_Open%29_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 4.0",
+      "author": "Oleg Yunakov",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Frances_Tiafoe_vs._Grigor_Dimitrov_in_a_quarterfinals_of_the_2024_US_Open_-_07.jpg/960px-Frances_Tiafoe_vs._Grigor_Dimitrov_in_a_quarterfinals_of_the_2024_US_Open_-_07.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

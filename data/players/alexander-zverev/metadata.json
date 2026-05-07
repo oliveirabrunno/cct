@@ -1,0 +1,15 @@
+{
+  "player": "Alexander Zverev",
+  "slug": "alexander-zverev",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Alexander_Zverev.jpg/960px-Alexander_Zverev.jpg",
+      "downloaded_at": "2026-05-07"
+    }
+  ]
+}

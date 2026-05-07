@@ -1,0 +1,24 @@
+{
+  "player": "Roland Garros 2026",
+  "slug": "roland-garros-2026",
+  "photos": [
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC0",
+      "author": "Partynia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/2/2e/RG-Logo.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "downloaded_at": "2026-05-06"
+    },
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC0",
+      "author": "Partynia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/2/2e/RG-Logo.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "downloaded_at": "2026-05-06"
+    }
+  ]
+}

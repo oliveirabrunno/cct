@@ -1,0 +1,24 @@
+{
+  "player": "Nicolas Jarry",
+  "slug": "nicolas-jarry",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "robbiesaurus from Smithtown, NY, USA",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Nicolas_Jarry_%28CHI%29_%289672617713%29.jpg/960px-Nicolas_Jarry_%28CHI%29_%289672617713%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "robbiesaurus from Smithtown, NY, USA",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Nicolas_Jarry_%28CHI%29_%289672631141%29.jpg/960px-Nicolas_Jarry_%28CHI%29_%289672631141%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

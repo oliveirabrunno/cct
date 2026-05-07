@@ -1,0 +1,15 @@
+{
+  "player": "Iga Swiatek",
+  "slug": "iga-swiatek",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Iga_Swiatek_2023_Cropped_%2B_Retouched.jpg/960px-Iga_Swiatek_2023_Cropped_%2B_Retouched.jpg",
+      "downloaded_at": "2026-05-07"
+    }
+  ]
+}

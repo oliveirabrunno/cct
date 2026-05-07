@@ -1,0 +1,15 @@
+{
+  "player": "Elena Rybakina",
+  "slug": "elena-rybakina",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Elena_Rybakina_%282025_DC_Open%29_11_%28cropped%29.jpg/960px-Elena_Rybakina_%282025_DC_Open%29_11_%28cropped%29.jpg",
+      "downloaded_at": "2026-05-07"
+    }
+  ]
+}

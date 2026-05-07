@@ -1,0 +1,24 @@
+{
+  "player": "Madison Keys",
+  "slug": "madison-keys",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY 2.0",
+      "author": "Andrew Campbell",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Madison_Keys_%2818626696763%29.jpg/960px-Madison_Keys_%2818626696763%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "Carine06 from UK",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Madison_Keys_%2830061794857%29.jpg/960px-Madison_Keys_%2830061794857%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

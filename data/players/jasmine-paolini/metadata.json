@@ -1,0 +1,24 @@
+{
+  "player": "Jasmine Paolini",
+  "slug": "jasmine-paolini",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY 2.0",
+      "author": "Steven Pisano from Brooklyn, NY, USA",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/2017_US_Open_Tennis_-_Qualies_-_Miyu_Kato_%28JAP%29_def._Jasmine_Paolini_%28ITA%29_%2836391473470%29_%28cropped%29.jpg/960px-2017_US_Open_Tennis_-_Qualies_-_Miyu_Kato_%28JAP%29_def._Jasmine_Paolini_%28ITA%29_%2836391473470%29_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY 2.0",
+      "author": "Steven Pisano from Brooklyn, NY, USA",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/2017_US_Open_Tennis_-_Qualies_-_Miyu_Kato_%28JAP%29_def._Jasmine_Paolini_%28ITA%29_%2836391473470%29.jpg/960px-2017_US_Open_Tennis_-_Qualies_-_Miyu_Kato_%28JAP%29_def._Jasmine_Paolini_%28ITA%29_%2836391473470%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}

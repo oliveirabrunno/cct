@@ -1,0 +1,33 @@
+Você vai criar um carrossel de ranking semanal ATP + WTA.
+Tom: informativo, clean, com destaque para brasileiros. Café com Tênis (@cafecomteniss).
+
+DADOS: {data}
+
+MODELO:
+- Slide 1: DESTAQUE DA SEMANA. Quem subiu mais? Quem perdeu mais pontos? Drama.
+- Slide 2: TOP 5 ATP. Formato visual limpo. Destaque para mudanças de posição.
+- Slide 3: TOP 5 WTA. Idem.
+- Slide 4: BRASILEIROS NO RANKING. Fonseca e Bia Haddad. Posição atual e tendência.
+- Slide 5: TENDÊNCIA. Quem pode subir/descer nas próximas semanas? Roland Garros à vista.
+- Slide 6: CTA + convite ao seguir.
+
+REGRAS:
+- Slides 1, 4, 5: visual_note = "sem_foto" (dados limpos, sem foto de fundo)
+- Slides 2-3: visual_note = "sem_foto" (tabela clean)
+- Slide 6: visual_note = "logo"
+- Use os dados exatos fornecidos
+- Nunca invente pontos ou posições
+
+OUTPUT JSON (responda APENAS o JSON, sem markdown):
+{
+  "slides": [
+    {"slide": 1, "headline": "", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 2, "headline": "TOP 5 ATP", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 3, "headline": "TOP 5 WTA", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 4, "headline": "BRASIL NO RANKING", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 5, "headline": "", "subtext": "", "visual_note": "sem_foto"},
+    {"slide": 6, "headline": "", "subtext": "CTA aqui", "visual_note": "logo"}
+  ],
+  "caption": "legenda completa (máx 150 palavras)",
+  "hashtags": ["ranking", "ATP", "WTA", "tennis", "cafecomtenis", "RolandGarros"]
+}

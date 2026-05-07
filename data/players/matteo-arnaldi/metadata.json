@@ -1,0 +1,24 @@
+{
+  "player": "Matteo Arnaldi",
+  "slug": "matteo-arnaldi",
+  "photos": [
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikimedia",
+      "license": "CC BY-SA 2.0",
+      "author": "si.robi",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Arnaldi_BLO22_%2868%29_%2852157038811%29.jpg/960px-Arnaldi_BLO22_%2868%29_%2852157038811%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    },
+    {
+      "file": "action_01.jpg",
+      "type": "action",
+      "source": "wikimedia",
+      "license": "CC BY-SA 4.0",
+      "author": "Kuberzog",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Arthur_Fils_-_2024_Olympics_%28forehand%29.jpg/960px-Arthur_Fils_-_2024_Olympics_%28forehand%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-05"
+    }
+  ]
+}
