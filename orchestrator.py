@@ -50,25 +50,15 @@ log = get_logger("orchestrator")
 
 
 def _make_publisher():
-    """Retorna GraphPublisher se Meta estiver conectado, senão LocalPublisher."""
-    try:
-        import os, requests
-        token = os.getenv("META_ACCESS_TOKEN", "")
-        ig_user_id = os.getenv("META_IG_USER_ID", "")
-        if token and ig_user_id:
-            resp = requests.get(
-                f"https://graph.facebook.com/v19.0/{ig_user_id}",
-                params={"fields": "username,account_type", "access_token": token},
-                timeout=5,
-            ).json()
-            if "username" in resp or "id" in resp:
-                from publisher.graph_publisher import GraphPublisher
-                log.info(f"Publisher: Meta Graph API (@{resp.get('username', ig_user_id)})")
-                return GraphPublisher()
-            log.warning(f"Meta check falhou: {resp.get('error', {}).get('message', resp)}")
-    except Exception as e:
-        log.warning(f"Meta check erro: {e}")
-    log.info("Publisher: local (Meta não conectado — salva em output/queue/)")
+    """Retorna GraphPublisher se as variáveis Meta estiverem configuradas, senão LocalPublisher."""
+    import os
+    token = os.getenv("META_ACCESS_TOKEN", "")
+    ig_user_id = os.getenv("META_IG_USER_ID", "")
+    if token and ig_user_id:
+        from publisher.graph_publisher import GraphPublisher
+        log.info(f"Publisher: Meta Graph API (IG user {ig_user_id})")
+        return GraphPublisher()
+    log.info("Publisher: local (META_ACCESS_TOKEN ou META_IG_USER_ID não configurados)")
     return LocalPublisher()
 
 
