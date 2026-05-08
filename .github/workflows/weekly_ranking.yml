@@ -63,12 +63,20 @@ jobs:
       - name: Install Playwright (chromium only)
         run: python -m playwright install chromium --with-deps
 
+      - name: Cache dedup database
+        uses: actions/cache@v4
+        with:
+          path: data/database.sqlite
+          key: dedup-db-${{ github.run_id }}
+          restore-keys: dedup-db-
+
       - name: Atualizar dados Sackmann
         run: python scripts/update_sackmann.py
 
       - name: Gerar carrossel de ranking
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
           META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
           PAGE_ID: ${{ secrets.PAGE_ID }}

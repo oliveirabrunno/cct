@@ -241,8 +241,8 @@ async def generate_match_result_card(match_context: dict) -> dict | None:
     hashtags = re.findall(r"#\w+", caption)
     caption_clean = re.sub(r"\s*#\w+", "", caption).strip()
 
-    # 2. Buscar foto do vencedor
-    img_data = await img_manager.get_player_image(winner, image_type="action")
+    # 2. Buscar foto do vencedor — "any" permite usar Wikipedia profile (mais confiável)
+    img_data = await img_manager.get_player_image(winner, image_type="any")
     img_path = img_data.get("path") if img_data else None
 
     # 3. Gerar HTML

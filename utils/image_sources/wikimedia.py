@@ -189,7 +189,8 @@ def search_player_images(
 
     # Filtrar resultados onde o nome do jogador NÃO aparece na URL do arquivo
     validated = [r for r in results if _name_in_url(r["url"], player_name)]
-    final = validated if validated else results  # fallback sem filtro se não sobrar nada
+    # Sem fallback para resultados não validados — melhor retornar vazio do que foto errada
+    final = validated
 
     log.info(f"Wikimedia: {len(final)} fotos para '{player_name}' (temporada: {season})")
     return final[:max_results]

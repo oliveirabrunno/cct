@@ -138,12 +138,11 @@ def search_player_images(
             if _is_blacklisted(photo, season):
                 continue
 
-            # Verificar se o nome do jogador aparece no título (básico)
+            # Rejeitar fotos onde o sobrenome do jogador não aparece no título
             title = photo.get("title", "").lower()
             last_name = player_name.split()[-1].lower()
             if len(last_name) > 3 and last_name not in title and player_name.lower() not in title:
-                # Tolerante: não rejeita logo, mas prioriza os que têm nome
-                pass
+                continue
 
             seen_ids.add(photo_id)
             license_id = str(photo.get("license", ""))
