@@ -107,28 +107,38 @@ def _run_query(query: str, max_results: int, seen_urls: set, season: str) -> lis
     return results
 
 
+def _name_in_url(url: str, player_name: str) -> bool:
+    """Verifica se alguma parte relevante do nome do jogador está na URL do arquivo."""
+    url_lower = url.lower()
+    parts = [p.lower() for p in player_name.split() if len(p) > 2]
+    # Qualquer parte do nome (primeiro, último, ou do meio) deve estar na URL
+    return any(p in url_lower for p in parts)
+
+
 def search_player_images(
     player_name: str,
     max_results: int = 10,
     season_context: str | None = None,
 ) -> list[dict]:
     """
-    Busca fotos do jogador usando intitle: para garantir nome no arquivo.
-    Tenta queries da mais específica (clay + ano) para mais genérica.
+    Busca fotos do jogador no Wikimedia Commons.
+    Usa nome completo + 'tennis' em todas as queries para evitar ambiguidade
+    (ex: não pegar imagem de helicóptero Haddad ou atleta Fonseca de outra modalidade).
     """
-    season    = season_context or get_season_context()
-    last_name = player_name.split()[-1]
+    season     = season_context or get_season_context()
+    last_name  = player_name.split()[-1]
     seen_urls: set[str] = set()
     results:   list[dict] = []
 
     clay_terms = SEASON_TERMS.get(season, ["tennis"])
     queries = [
-        # 1. Nome no título + temporada + ano
-        f'intitle:"{last_name}" {clay_terms[0]} {CURRENT_YEAR}',
-        f'intitle:"{last_name}" {clay_terms[0]} {PREV_YEAR}',
-        # 2. Nome no título + segundo termo de temporada
-        f'intitle:"{last_name}" {clay_terms[1] if len(clay_terms) > 1 else "tennis"}',
-        # 3. Nome no título apenas (qualquer foto correta do jogador)
+        # 1. Nome completo + tennis + temporada + ano (mais preciso)
+        f'"{player_name}" tennis {clay_terms[0]} {CURRENT_YEAR}',
+        f'"{player_name}" tennis {clay_terms[0]} {PREV_YEAR}',
+        # 2. Nome completo + tennis (qualquer temporada)
+        f'"{player_name}" tennis',
+        # 3. intitle com sobrenome + tennis (fallback — sempre inclui tennis)
+        f'intitle:"{last_name}" tennis {clay_terms[0]}',
         f'intitle:"{last_name}" tennis',
     ]
 
@@ -138,8 +148,12 @@ def search_player_images(
         batch = _run_query(query, max_results=6, seen_urls=seen_urls, season=season)
         results.extend(batch)
 
-    log.info(f"Wikimedia: {len(results)} fotos para '{player_name}' (temporada: {season})")
-    return results[:max_results]
+    # Filtrar resultados onde o nome do jogador NÃO aparece na URL do arquivo
+    validated = [r for r in results if _name_in_url(r["url"], player_name)]
+    final = validated if validated else results  # fallback sem filtro se não sobrar nada
+
+    log.info(f"Wikimedia: {len(final)} fotos para '{player_name}' (temporada: {season})")
+    return final[:max_results]
 
 
 def get_player_photos(
