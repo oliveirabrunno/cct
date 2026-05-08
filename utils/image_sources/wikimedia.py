@@ -44,10 +44,28 @@ def get_season_context() -> str:
     return "hard"
 
 
+_GROUP_PHOTO_PATTERNS = ["_and_", "_e_", "_vs_", "-and-", "-vs-", "%2C_", ",_"]
+_MIN_YEAR = 2019
+
+
 def _filename_ok(url: str, season: str) -> bool:
     bad = SEASON_BAD_KEYWORDS.get(season, [])
     fname = url.split("/")[-1]
     return not any(kw.lower() in fname.lower() for kw in bad)
+
+
+def _is_solo_recent(url: str) -> bool:
+    """Descarta fotos de grupo e fotos muito antigas (< 2019)."""
+    fname = url.split("/")[-1].lower()
+    # Fotos de grupo: "Djokovic_and_Swiatek", "Tommy_Paul,_Casper_Ruud", etc.
+    if any(p in fname for p in _GROUP_PHOTO_PATTERNS):
+        return False
+    # Fotos antigas: se o filename contém um ano explícito < MIN_YEAR, descartar
+    import re
+    years = re.findall(r"20(\d{2})", fname)
+    if years and all(int(y) < (_MIN_YEAR - 2000) for y in years):
+        return False
+    return True
 
 
 def _run_query(query: str, max_results: int, seen_urls: set, season: str) -> list[dict]:
@@ -90,6 +108,9 @@ def _run_query(query: str, max_results: int, seen_urls: set, season: str) -> lis
         if not _filename_ok(url, season):
             continue
 
+        if not _is_solo_recent(url):
+            continue
+
         seen_urls.add(url)
         author_raw = meta.get("Artist", {}).get("value", "Unknown")
         author = re.sub(r"<[^>]+>", "", author_raw).strip()
@@ -109,15 +130,28 @@ def _run_query(query: str, max_results: int, seen_urls: set, season: str) -> lis
 
 def _ascii(s: str) -> str:
     import unicodedata
-    return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii").lower()
+    from urllib.parse import unquote
+    # Decode percent-encoded sequences first (e.g. %C5%9B → Ś) before normalizing
+    decoded = unquote(s)
+    return unicodedata.normalize("NFKD", decoded).encode("ascii", "ignore").decode("ascii").lower()
 
 
 def _name_in_url(url: str, player_name: str) -> bool:
-    """Verifica se alguma parte relevante do nome do jogador está na URL do arquivo.
-    Normaliza diacríticos (ex: Świątek → swiatek) para comparar com URLs ASCII."""
+    """Verifica se o nome do jogador está na URL.
+    - Normaliza diacríticos (Świątek → swiatek).
+    - Exige sobrenome sempre.
+    - Exige primeiro nome quando >= 5 chars (evita Christian_Ruud para Casper Ruud)."""
     url_ascii = _ascii(url)
     parts = [_ascii(p) for p in player_name.split() if len(p) > 2]
-    return any(p in url_ascii for p in parts)
+    if not parts:
+        return True
+    last = parts[-1]
+    if last not in url_ascii:
+        return False
+    first = parts[0]
+    if len(first) >= 5 and first not in url_ascii:
+        return False
+    return True
 
 
 def search_player_images(
