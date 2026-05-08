@@ -539,7 +539,7 @@ async def run_test_match_result():
 
 async def run_calendar():
     import subprocess
-    subprocess.run([sys.executable, "scripts/calendar.py"])
+    subprocess.run([sys.executable, "scripts/editorial_calendar.py"])
 
 
 async def run_check_meta():
