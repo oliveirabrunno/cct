@@ -9,6 +9,10 @@ Uso:
 import subprocess
 import sys
 from pathlib import Path
+
+# Garante que o root do projeto está no sys.path quando executado como script
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from utils.logger import get_logger
 
 log = get_logger(__name__)
