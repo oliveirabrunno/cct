@@ -30,10 +30,19 @@ class ImageManager:
         if not player_name:
             return self._get_placeholder("Desconhecido")
 
+        # Carregar filenames usados recentemente do SQLite (evita repetição entre runs)
+        from utils.dedup import get_used_image_filenames, register_used_image
+        used_files = get_used_image_filenames(player_name)
+
         # 1. Cache local — foto já baixada e verificada
-        cached = self.cache.get_unused(player_name, image_type, exclude_paths=self._used_paths)
+        cached = self.cache.get_unused(
+            player_name, image_type,
+            exclude_paths=self._used_paths,
+            exclude_filenames=used_files,
+        )
         if cached:
             self._used_paths.add(cached["path"])
+            register_used_image(player_name, cached["filename"])
             log.info(f"Cache local: {player_name} → {cached['path'].split('/')[-1]}")
             return cached
 
@@ -105,7 +114,9 @@ class ImageManager:
                     local_path = await self.cache.download_and_save(player_name, photo, image_type)
                     if local_path not in self._used_paths:
                         self._used_paths.add(local_path)
-                        log.info(f"Flickr: {player_name} → {local_path.split('/')[-1]}")
+                        fname = local_path.split("/")[-1]
+                        register_used_image(player_name, fname)
+                        log.info(f"Flickr: {player_name} → {fname}")
                         return {
                             "path":        local_path,
                             "source":      "flickr",
@@ -119,6 +130,7 @@ class ImageManager:
         return None
 
     async def _try_wikipedia_profile(self, player_name: str, image_type: str) -> dict | None:
+        from utils.dedup import register_used_image
         try:
             photo = get_profile_photo(player_name)
             if not photo:
@@ -126,7 +138,9 @@ class ImageManager:
             local_path = await self.cache.download_and_save(player_name, photo, image_type)
             if local_path not in self._used_paths:
                 self._used_paths.add(local_path)
-                log.info(f"Wikipedia: {player_name} → {local_path.split('/')[-1]}")
+                fname = local_path.split("/")[-1]
+                register_used_image(player_name, fname)
+                log.info(f"Wikipedia: {player_name} → {fname}")
                 return {
                     "path":        local_path,
                     "source":      "wikipedia",
@@ -138,11 +152,14 @@ class ImageManager:
         return None
 
     async def _try_wikimedia(self, player_name: str, image_type: str) -> dict | None:
+        from utils.dedup import register_used_image
         for photo in get_player_photos(player_name, count=4):
             try:
                 local_path = await self.cache.download_and_save(player_name, photo, image_type)
                 if local_path not in self._used_paths:
                     self._used_paths.add(local_path)
+                    fname = local_path.split("/")[-1]
+                    register_used_image(player_name, fname)
                     return {
                         "path":        local_path,
                         "source":      "wikimedia",

@@ -84,6 +84,34 @@ def register_post(
             pass
 
 
+def register_used_image(player: str, filename: str) -> None:
+    """Registra arquivo de imagem como usado (evita repetição por 7 dias)."""
+    key = f"{player.lower().strip()}::{filename}"
+    h = hashlib.sha256(key.encode()).hexdigest()[:16]
+    with _get_conn() as conn:
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO image_urls (url_hash, url_preview, player, source, used_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (h, filename, player, "file", datetime.now().isoformat())
+            )
+            conn.commit()
+        except Exception:
+            pass
+
+
+def get_used_image_filenames(player: str, hours: int = 168) -> set[str]:
+    """Retorna filenames de imagens usadas nas últimas `hours` horas para este jogador."""
+    prefix = f"{player.lower().strip()}::"
+    cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
+    with _get_conn() as conn:
+        rows = conn.execute(
+            "SELECT url_preview FROM image_urls WHERE player = ? AND source = 'file' AND used_at > ?",
+            (player, cutoff)
+        ).fetchall()
+    return {r[0] for r in rows}
+
+
 def is_duplicate_image_url(url: str, hours: int = 168) -> bool:
     """Retorna True se esta URL de imagem foi usada nos últimos `hours` horas (padrão: 7 dias)."""
     h = hashlib.sha256(url.encode()).hexdigest()[:16]

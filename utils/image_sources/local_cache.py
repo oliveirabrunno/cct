@@ -27,8 +27,9 @@ class LocalImageCache:
         player_name: str,
         image_type: str = "any",
         exclude_paths: set | None = None,
+        exclude_filenames: set | None = None,
     ) -> dict | None:
-        """Retorna a primeira foto em cache não presente em exclude_paths."""
+        """Retorna a primeira foto em cache não presente em exclude_paths nem exclude_filenames."""
         slug = _slug(player_name)
         player_dir = DATA_DIR / slug
         meta_path = player_dir / "metadata.json"
@@ -42,21 +43,24 @@ class LocalImageCache:
         photos = meta.get("photos", [])
         if image_type != "any":
             filtered = [p for p in photos if p.get("type") == image_type]
-            # Se não encontrou pelo tipo exato, usa todas
             photos = filtered if filtered else photos
 
-        exclude = exclude_paths or set()
+        excl_paths = exclude_paths or set()
+        excl_files = exclude_filenames or set()
         for photo in photos:
-            file_path = player_dir / photo["file"]
+            filename = photo["file"]
+            file_path = player_dir / filename
             if not file_path.exists():
                 continue
-            path_str = str(file_path)
-            if path_str in exclude:
+            if str(file_path) in excl_paths:
+                continue
+            if filename in excl_files:
                 continue
             return {
-                "path": path_str,
-                "source": photo.get("source", "local"),
-                "license": photo.get("license", ""),
+                "path":        str(file_path),
+                "filename":    filename,
+                "source":      photo.get("source", "local"),
+                "license":     photo.get("license", ""),
                 "credit_text": f"📸 {photo.get('author', 'Wikimedia Commons')}",
             }
 
