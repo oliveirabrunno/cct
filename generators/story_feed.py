@@ -192,8 +192,29 @@ async def run_story_feed(count: int = 3, publish: bool = True) -> list[str]:
         from publisher.local_publisher import LocalPublisher
         publisher = LocalPublisher()
 
+    from utils.dedup import is_duplicate, register_post
+    from datetime import date
+
+    # TTLs por tipo: news pode repetir a cada 3h (notícia diferente);
+    # conteúdo estático (ranking, torneio, draw) uma vez por dia.
+    STORY_TTL = {
+        "news_update":     3,   # horas
+        "ranking_update":  20,
+        "tournament_info": 20,
+        "draw_teaser":     20,
+    }
+
+    today = date.today().isoformat()
+
     published = []
     for i, (story_type, generator_fn) in enumerate(STORY_TYPES[:count]):
+        ttl = STORY_TTL.get(story_type, 4)
+        dedup_key = f"{story_type}_{today}"
+
+        if is_duplicate(f"story_{story_type}", dedup_key, hours=ttl):
+            log.info(f"Story {story_type} já publicado nas últimas {ttl}h — pulando")
+            continue
+
         log.info(f"Gerando story #{i+1}: {story_type}")
         try:
             if story_type in ("news_update", "tournament_info"):
@@ -203,6 +224,7 @@ async def run_story_feed(count: int = 3, publish: bool = True) -> list[str]:
 
             if path:
                 await publisher.publish_story(path)
+                register_post(f"story_{story_type}", dedup_key)
                 published.append(path)
                 log.info(f"Story publicado: {story_type} → {path}")
             else:
@@ -210,7 +232,6 @@ async def run_story_feed(count: int = 3, publish: bool = True) -> list[str]:
         except Exception as e:
             log.error(f"Story {story_type} falhou: {e}")
 
-        # Pausa entre stories para não spammar
         if i < count - 1:
             await asyncio.sleep(1)
 

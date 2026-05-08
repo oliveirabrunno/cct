@@ -146,10 +146,13 @@ async def run_live_monitor():
         # Card de resultado principal (imagem única, estilo ATP Tour)
         await process_and_publish_match(match, publisher)
 
-        # Story de breaking news complementar
-        story_path = await story_gen.generate_breaking_story(match)
-        if story_path:
-            await publisher.publish_story(story_path)
+        # Story de breaking news complementar (dedup por partida)
+        story_key = f"breaking_{winner}_{loser}".lower().replace(" ", "_")
+        if not is_duplicate("story_breaking", story_key, hours=12):
+            story_path = await story_gen.generate_breaking_story(match)
+            if story_path:
+                await publisher.publish_story(story_path)
+                register_post("story_breaking", story_key)
 
 
 async def run_trend_check():
@@ -258,8 +261,13 @@ async def run_test_reel():
 
 async def run_ranking():
     log.info("=== Ranking semanal ===")
+    from datetime import date as _date
     from scrapers.live_ranking import fetch_atp_live_rankings as fetch_atp_rankings
     from scrapers.live_ranking import fetch_wta_live_rankings as fetch_wta_rankings
+
+    if is_duplicate("ranking_carousel", str(_date.today()), hours=20):
+        log.info("Ranking carousel já publicado hoje — pulando")
+        return
 
     publisher = LocalPublisher()
 
@@ -290,6 +298,7 @@ async def run_ranking():
 
     if result and result.get("image_paths"):
         await publisher.publish_carousel(result["image_paths"], result["caption"], result["hashtags"])
+        register_post("ranking_carousel", str(_date.today()), description=result["caption"][:100])
         print(f"Ranking gerado: {len(result['image_paths'])} slides | {result['caption'][:100]}...")
 
 
@@ -371,7 +380,7 @@ async def run_stat_card():
 
         story_gen = StoryGenerator()
         news = search_news(player, hours=8)
-        if news:
+        if news and not is_duplicate("story_poll", player, hours=18):
             poll = await story_gen.generate_h2h_poll_story(
                 player_full,
                 "próximo adversário",
@@ -379,6 +388,7 @@ async def run_stat_card():
             )
             if poll and poll.get("image_path"):
                 await publisher.publish_story(poll["image_path"])
+                register_post("story_poll", player)
     elif not can_publish_feed_post():
         log.warning("Stat card: quota Meta atingida — conteúdo salvo localmente")
 
@@ -492,7 +502,13 @@ async def run_publish_match():
 
     from scrapers.match_stats import build_match_context
     from generators.match_result_card import generate_match_result_card
-    from utils.dedup import register_post
+    from utils.dedup import is_duplicate, register_post
+
+    match_key = f"{winner}_{loser}_{score}".lower().replace(" ", "_")
+    if is_duplicate("match_result", match_key, hours=12):
+        log.info(f"Resultado {winner} vs {loser} já publicado — pulando")
+        print("Resultado já publicado recentemente.")
+        return
 
     publisher = _make_publisher()
 
@@ -502,7 +518,6 @@ async def run_publish_match():
     result = await generate_match_result_card(ctx)
     if result:
         await publisher.publish_post(result["image_path"], result["caption"], result["hashtags"])
-        match_key = f"{winner}_{loser}_{score}".lower().replace(" ", "_")
         register_post("match_result", match_key, description=result["caption"][:100])
         log.info(f"Publicado: {winner} def. {loser}")
         print(f"\nCard: {result['image_path']}")

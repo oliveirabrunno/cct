@@ -187,15 +187,17 @@ async def run():
             register_post("on_this_day", today.isoformat(), description=headline)
             log.info(f"On This Day publicado: {headline}")
 
-        story_gen = StoryGenerator()
-        story_path = await story_gen.generate_curiosity_story(
-            stat=headline,
-            context=subtext or "Veja o post 👆",
-            player_name=player,
-        )
-        if story_path:
-            await publisher.publish_story(story_path)
-            log.info("Story teaser On This Day publicado")
+        if not is_duplicate("story_on_this_day", today.isoformat(), hours=20):
+            story_gen = StoryGenerator()
+            story_path = await story_gen.generate_curiosity_story(
+                stat=headline,
+                context=subtext or "Veja o post 👆",
+                player_name=player,
+            )
+            if story_path:
+                await publisher.publish_story(story_path)
+                register_post("story_on_this_day", today.isoformat())
+                log.info("Story teaser On This Day publicado")
 
     except Exception as e:
         log.error(f"Publicação On This Day falhou: {e}")
