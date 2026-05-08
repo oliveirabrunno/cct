@@ -54,19 +54,20 @@ def _make_publisher():
     try:
         import os, requests
         token = os.getenv("META_ACCESS_TOKEN", "")
-        page_id = os.getenv("PAGE_ID", "")
-        if token and page_id:
+        ig_user_id = os.getenv("META_IG_USER_ID", "")
+        if token and ig_user_id:
             resp = requests.get(
-                f"https://graph.facebook.com/v19.0/{page_id}",
-                params={"fields": "instagram_business_account", "access_token": token},
+                f"https://graph.facebook.com/v19.0/{ig_user_id}",
+                params={"fields": "username,account_type", "access_token": token},
                 timeout=5,
             ).json()
-            if resp.get("instagram_business_account"):
+            if "username" in resp or "id" in resp:
                 from publisher.graph_publisher import GraphPublisher
-                log.info("Publisher: Meta Graph API (Instagram Business conectado)")
+                log.info(f"Publisher: Meta Graph API (@{resp.get('username', ig_user_id)})")
                 return GraphPublisher()
-    except Exception:
-        pass
+            log.warning(f"Meta check falhou: {resp.get('error', {}).get('message', resp)}")
+    except Exception as e:
+        log.warning(f"Meta check erro: {e}")
     log.info("Publisher: local (Meta não conectado — salva em output/queue/)")
     return LocalPublisher()
 
