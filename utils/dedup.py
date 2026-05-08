@@ -28,6 +28,16 @@ def _get_conn() -> sqlite3.Connection:
             ig_post_id   TEXT
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS image_urls (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            url_hash   TEXT UNIQUE NOT NULL,
+            url_preview TEXT,
+            player     TEXT,
+            source     TEXT,
+            used_at    TEXT NOT NULL
+        )
+    """)
     conn.commit()
     return conn
 
@@ -71,6 +81,33 @@ def register_post(
             conn.commit()
             log.info(f"Post registrado: {post_type}/{player} → {h}")
         except sqlite3.IntegrityError:
+            pass
+
+
+def is_duplicate_image_url(url: str, hours: int = 168) -> bool:
+    """Retorna True se esta URL de imagem foi usada nos últimos `hours` horas (padrão: 7 dias)."""
+    h = hashlib.sha256(url.encode()).hexdigest()[:16]
+    cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
+    with _get_conn() as conn:
+        row = conn.execute(
+            "SELECT id FROM image_urls WHERE url_hash = ? AND used_at > ?",
+            (h, cutoff)
+        ).fetchone()
+    return row is not None
+
+
+def register_image_url(url: str, player: str = "", source: str = "") -> None:
+    """Registra URL de imagem como usada para evitar repetição."""
+    h = hashlib.sha256(url.encode()).hexdigest()[:16]
+    with _get_conn() as conn:
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO image_urls (url_hash, url_preview, player, source, used_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (h, url[:200], player, source, datetime.now().isoformat())
+            )
+            conn.commit()
+        except Exception:
             pass
 
 

@@ -1,9 +1,7 @@
 """
-Flickr como fonte de imagens de jogadores — fotos CC recentes de torneios.
-Requer FLICKR_API_KEY no .env (gratuito: flickr.com/services/api/key.gne).
-
-Busca por nome do jogador + contexto de temporada + ano atual.
-Aceita apenas CC BY (4), CC BY-SA (5), CC0 (9), Public Domain (10).
+Flickr — fonte primária de imagens CC de tenistas.
+Queries em 4 tiers: torneio específico → superfície → tênis+ano → tênis.
+Requer FLICKR_API_KEY (gratuito em flickr.com/services/apps/create).
 """
 
 import os
@@ -14,11 +12,10 @@ from utils.logger import get_logger
 
 log = get_logger(__name__)
 
-FLICKR_API    = "https://api.flickr.com/services/rest/"
+FLICKR_API     = "https://api.flickr.com/services/rest/"
 FLICKR_API_KEY = os.getenv("FLICKR_API_KEY", "")
 
-# Licenças aceitas (livres para uso editorial/atribuição)
-ACCEPTED_LICENSES = {"4", "5", "9", "10"}  # CC BY, CC BY-SA, CC0, PD
+ACCEPTED_LICENSES = {"4", "5", "9", "10"}  # CC BY, CC BY-SA, CC0, Public Domain
 LICENSE_NAMES = {
     "4":  "CC BY 2.0",
     "5":  "CC BY-SA 2.0",
@@ -26,93 +23,131 @@ LICENSE_NAMES = {
     "10": "Public Domain",
 }
 
-# Palavras-chave de salas de quadra que queremos EVITAR por temporada
-SEASON_BLACKLIST = {
-    "clay":   ["us_open", "us open", "australian_open", "australian open", "wimbledon", "queens"],
-    "grass":  ["us_open", "us open", "australian_open", "australian open"],
-    "hard":   ["roland_garros", "roland garros", "clay"],
-    "indoor": [],
+# Termos de busca por nome de torneio
+TOURNAMENT_TERMS = {
+    "Roma":           ["Roma", "Rome", "Internazionali", "Italian Open", "Foro Italico"],
+    "Roland Garros":  ["Roland Garros", "French Open", "Roland-Garros"],
+    "Madrid":         ["Madrid", "Mutua Madrid", "Caja Magica"],
+    "Monte-Carlo":    ["Monte Carlo", "Monte-Carlo"],
+    "Wimbledon":      ["Wimbledon", "All England"],
+    "US Open":        ["US Open", "Flushing"],
+    "Australian Open":["Australian Open", "Melbourne"],
+    "Miami":          ["Miami Open"],
+    "Indian Wells":   ["Indian Wells"],
+    "Cincinnati":     ["Cincinnati", "Western Southern"],
+    "Paris":          ["Paris Bercy", "Rolex Paris Masters"],
+    "London":         ["ATP Finals", "Nitto ATP Finals"],
 }
 
-SEASON_QUERIES = {
-    "clay":  [
-        "{player} tennis Roland Garros {year}",
-        "{player} tennis clay court {year}",
-        "{player} tennis Roma clay {year}",
-        "{player} tennis clay",
-    ],
-    "grass": [
-        "{player} tennis Wimbledon {year}",
-        "{player} tennis grass court {year}",
-        "{player} tennis grass",
-    ],
-    "hard":  [
-        "{player} tennis US Open {year}",
-        "{player} tennis Australian Open {year}",
-        "{player} tennis hard court {year}",
-    ],
+# Termos de superfície para quando não temos torneio específico
+SURFACE_TERMS = {
+    "clay":  ["clay court", "terre battue"],
+    "grass": ["grass court", "Wimbledon", "Queens"],
+    "hard":  ["hard court"],
 }
 
 
 def _get_season() -> str:
-    month = date.today().month
-    if month in (4, 5, 6):
+    m = date.today().month
+    if m in (4, 5, 6):
         return "clay"
-    if month in (6, 7):
+    if m in (6, 7):
         return "grass"
     return "hard"
 
 
-def _is_blacklisted(photo: dict, season: str) -> bool:
-    blacklist = SEASON_BLACKLIST.get(season, [])
-    title = (photo.get("title", "") + " " + str(photo.get("id", ""))).lower()
-    return any(kw in title for kw in blacklist)
+def _build_queries(
+    player_name: str,
+    tournament_name: str | None,
+    season: str,
+    year: int,
+) -> list[str]:
+    """
+    Gera queries em ordem de especificidade decrescente.
+    Usa nome completo entre aspas (para jogadores menos famosos) + fallback só sobrenome.
+    """
+    last_name = player_name.split()[-1]
+    queries = []
+
+    # Tier 1: Nome completo + torneio específico (mais preciso)
+    if tournament_name:
+        terms = TOURNAMENT_TERMS.get(tournament_name, [tournament_name])
+        queries.append(f'"{player_name}" tennis {terms[0]} {year}')
+        queries.append(f'"{player_name}" {terms[0]} tennis')
+
+    # Tier 2: Nome completo + superfície + ano
+    surface_terms = SURFACE_TERMS.get(season, ["tennis"])
+    queries.append(f'"{player_name}" tennis {surface_terms[0]} {year}')
+
+    # Tier 3: Nome completo + tênis + ano (sem superfície — mais amplo)
+    queries.append(f'"{player_name}" tennis {year}')
+
+    # Tier 4: Só sobrenome + tênis (fallback para jogadores com nome longo/estrangeiro)
+    if last_name.lower() != player_name.split()[0].lower():  # nome ≠ sobrenome
+        queries.append(f'"{last_name}" tennis {year}')
+        queries.append(f'"{last_name}" tennis')
+
+    # Tier 5: Nome completo sem ano (último recurso)
+    queries.append(f'"{player_name}" tennis')
+
+    # Deduplicar mantendo ordem
+    seen: set[str] = set()
+    return [q for q in queries if not (q in seen or seen.add(q))]
 
 
-def _photo_to_url(photo: dict) -> str | None:
-    """Monta URL da foto no maior tamanho disponível."""
-    # url_b = 1024px (Large), url_c = 800px (Medium 800)
-    return photo.get("url_b") or photo.get("url_c") or photo.get("url_z") or None
+def _name_ok(title: str, tags: str, player_name: str) -> bool:
+    """Exige sobrenome (e primeiro nome se >= 5 chars) em título OU tags."""
+    combined = (title + " " + tags).lower()
+    parts = player_name.lower().split()
+    last = parts[-1]
+    if last not in combined:
+        return False
+    first = parts[0]
+    if len(first) >= 5 and first not in combined:
+        return False
+    return True
 
 
 def search_player_images(
     player_name: str,
     count: int = 6,
     season: str | None = None,
+    tournament_name: str | None = None,
     exclude_urls: set | None = None,
 ) -> list[dict]:
     """
-    Busca fotos CC do jogador no Flickr priorizando temporada atual.
-    Retorna lista de dicts com url, license, author, source.
+    Busca fotos CC do jogador no Flickr.
+    Prioriza fotos do torneio atual → superfície → tênis genérico.
+    Rejeita fotos onde o nome do jogador não aparece no título/tags.
+    Ordena por data decrescente (mais recentes primeiro).
     """
     if not FLICKR_API_KEY:
         log.debug("FLICKR_API_KEY não configurado — Flickr desativado")
         return []
 
-    season  = season or _get_season()
-    year    = date.today().year
-    exclude = exclude_urls or set()
+    season   = season or _get_season()
+    year     = date.today().year
+    exclude  = exclude_urls or set()
     results: list[dict] = []
     seen_ids: set[str]  = set()
 
-    queries = SEASON_QUERIES.get(season, SEASON_QUERIES["hard"])
+    queries = _build_queries(player_name, tournament_name, season, year)
 
-    for query_tpl in queries:
+    for query in queries:
         if len(results) >= count:
             break
-        query = query_tpl.format(player=player_name, year=year)
 
         params = {
-            "method":        "flickr.photos.search",
-            "api_key":       FLICKR_API_KEY,
-            "text":          query,
-            "license":       ",".join(ACCEPTED_LICENSES),
-            "sort":          "date-posted-desc",
-            "content_type":  1,          # fotos apenas
-            "media":         "photos",
-            "extras":        "url_b,url_c,url_z,license,owner_name,date_upload,title",
-            "per_page":      15,
-            "format":        "json",
+            "method":         "flickr.photos.search",
+            "api_key":        FLICKR_API_KEY,
+            "text":           query,
+            "license":        ",".join(ACCEPTED_LICENSES),
+            "sort":           "date-posted-desc",   # mais recentes primeiro
+            "content_type":   1,                    # só fotos
+            "media":          "photos",
+            "extras":         "url_b,url_c,url_z,license,owner_name,date_upload,title,tags",
+            "per_page":       20,
+            "format":         "json",
             "nojsoncallback": 1,
         }
 
@@ -121,48 +156,50 @@ def search_player_images(
             resp.raise_for_status()
             data = resp.json()
         except Exception as e:
-            log.warning(f"Flickr search falhou ({query}): {e}")
+            log.warning(f"Flickr search falhou ({query!r}): {e}")
             continue
 
         photos = data.get("photos", {}).get("photo", [])
+        log.debug(f"Flickr '{query}': {len(photos)} fotos brutas")
+
         for photo in photos:
             photo_id = str(photo.get("id", ""))
             if photo_id in seen_ids:
                 continue
 
-            url = _photo_to_url(photo)
+            # Pegar URL no maior tamanho disponível
+            url = photo.get("url_b") or photo.get("url_c") or photo.get("url_z")
             if not url or url in exclude:
                 continue
 
-            # Filtrar fotos de temporada errada pelo título
-            if _is_blacklisted(photo, season):
-                continue
+            title = photo.get("title", "")
+            tags  = photo.get("tags", "")
 
-            # Rejeitar fotos onde o sobrenome do jogador não aparece no título
-            title = photo.get("title", "").lower()
-            last_name = player_name.split()[-1].lower()
-            if len(last_name) > 3 and last_name not in title and player_name.lower() not in title:
+            # Validação: nome do jogador deve estar no título ou nas tags
+            if not _name_ok(title, tags, player_name):
+                log.debug(f"Flickr rejeitou '{title}' para '{player_name}'")
                 continue
 
             seen_ids.add(photo_id)
             license_id = str(photo.get("license", ""))
-            owner = photo.get("ownername", "Flickr")
 
             results.append({
                 "url":            url,
                 "license":        LICENSE_NAMES.get(license_id, f"CC license {license_id}"),
-                "author":         owner,
+                "author":         photo.get("ownername", "Flickr"),
                 "source":         "flickr",
                 "season_context": season,
-                "title":          photo.get("title", ""),
+                "tournament":     tournament_name or "",
+                "title":          title,
             })
 
             if len(results) >= count:
                 break
 
     if results:
-        log.info(f"Flickr: {len(results)} fotos para '{player_name}' (temporada: {season})")
+        log.info(f"Flickr: {len(results)} fotos para '{player_name}' "
+                 f"(torneio: {tournament_name or '—'}, season: {season})")
     else:
-        log.debug(f"Flickr: nenhuma foto para '{player_name}'")
+        log.info(f"Flickr: nenhuma foto encontrada para '{player_name}'")
 
     return results
