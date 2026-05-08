@@ -17,15 +17,44 @@ OUTPUT_DIR = Path("output/queue")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
+_STALE_KEYWORDS = [
+    "relembre", "relembra", "história", "lenda", "aniversário", "anos atrás",
+    "os melhores", "top 10", "ranking dos", "galeria", "arquivo",
+    "remember when", "on this day", "throwback", "classic",
+]
+
+_BREAKING_KEYWORDS = [
+    "vence", "venceu", "derrota", "derrotou", "avança", "avançou",
+    "elimina", "eliminou", "conquista", "conquistou", "anuncia",
+    "lesão", "lesionado", "retira", "retirou", "semifinal", "final",
+    "beats", "defeated", "advances", "wins", "announces", "injured",
+    "withdraws", "semifinal", "quarterfinal",
+]
+
+
+def _is_relevant_news(article: dict) -> bool:
+    """Retorna True apenas para notícias de fatos acontecendo agora."""
+    text = (article.get("title", "") + " " + article.get("summary", "")).lower()
+    if any(kw in text for kw in _STALE_KEYWORDS):
+        return False
+    return any(kw in text for kw in _BREAKING_KEYWORDS)
+
+
 async def _generate_news_story(gen: StoryGenerator, content_gen: ContentGenerator) -> str | None:
     """Story de novidade: puxa notícia quente e gera curiosity story."""
     try:
         from scrapers.google_news import fetch_recent_news
-        news = fetch_recent_news(hours=6)
+        news = fetch_recent_news(hours=3)
         if not news:
             return None
 
-        top = news[0]
+        # Filtrar apenas notícias com fatos acontecendo agora
+        relevant = [a for a in news if _is_relevant_news(a)]
+        if not relevant:
+            log.info("news_story: nenhuma notícia relevante/breaking nas últimas 3h — pulando story")
+            return None
+
+        top = relevant[0]
         headline = top.get("title", "")
         summary  = top.get("summary", top.get("description", ""))[:200]
         player   = top.get("player", "")

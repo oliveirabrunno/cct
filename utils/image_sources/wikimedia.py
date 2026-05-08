@@ -107,12 +107,17 @@ def _run_query(query: str, max_results: int, seen_urls: set, season: str) -> lis
     return results
 
 
+def _ascii(s: str) -> str:
+    import unicodedata
+    return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii").lower()
+
+
 def _name_in_url(url: str, player_name: str) -> bool:
-    """Verifica se alguma parte relevante do nome do jogador está na URL do arquivo."""
-    url_lower = url.lower()
-    parts = [p.lower() for p in player_name.split() if len(p) > 2]
-    # Qualquer parte do nome (primeiro, último, ou do meio) deve estar na URL
-    return any(p in url_lower for p in parts)
+    """Verifica se alguma parte relevante do nome do jogador está na URL do arquivo.
+    Normaliza diacríticos (ex: Świątek → swiatek) para comparar com URLs ASCII."""
+    url_ascii = _ascii(url)
+    parts = [_ascii(p) for p in player_name.split() if len(p) > 2]
+    return any(p in url_ascii for p in parts)
 
 
 def search_player_images(
