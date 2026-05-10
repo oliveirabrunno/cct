@@ -141,6 +141,14 @@ async def generate_card_with_player(
         if img_data and img_data.get("source") == "placeholder":
             img_data = None
 
+    # Bloqueia publicação de post sem foto quando a foto é obrigatória
+    if use_photo and player_name and img_data is None:
+        log.error(
+            f"Foto obrigatória para '{player_name}' ({visual_note}) não encontrada — "
+            "card abortado para evitar post sem imagem no Instagram"
+        )
+        return None
+
     bg_path = None
 
     if img_data and img_data.get("path"):

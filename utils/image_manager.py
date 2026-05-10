@@ -49,30 +49,44 @@ class ImageManager:
         if not download_if_missing:
             return self._get_placeholder(player_name)
 
-        # 2. Flickr — fonte primária: CC, alta qualidade, aware do torneio atual
+        # 2. Restore do metadata — re-baixa foto do url_original quando arquivo
+        #    não existe em disco (típico após cache miss no GitHub Actions).
+        #    Executa ANTES do Flickr para evitar requests desnecessários.
+        restored = await self.cache.try_restore_from_metadata(
+            player_name, image_type, exclude_filenames=set(used_files)
+        )
+        if restored:
+            self._used_paths.add(restored["path"])
+            try:
+                register_used_image(player_name, restored["filename"])
+            except Exception:
+                pass
+            return restored
+
+        # 4. Flickr — fonte primária: CC, alta qualidade, aware do torneio atual
         if _FLICKR_AVAILABLE:
             result = await self._try_flickr(player_name, image_type, tournament_name)
             if result:
                 return result
 
-        # 3. Wikipedia profile — headshot confiável para jogadores conhecidos
+        # 5. Wikipedia profile — headshot confiável para jogadores conhecidos
         if image_type in ("headshot", "any"):
             result = await self._try_wikipedia_profile(player_name, image_type)
             if result:
                 return result
 
-        # 4. Wikimedia Commons — fallback com busca por nome
+        # 6. Wikimedia Commons — fallback com busca por nome
         result = await self._try_wikimedia(player_name, image_type)
         if result:
             return result
 
-        # 5. Wikipedia profile como fallback de action (melhor que nada)
+        # 7. Wikipedia profile como fallback de action (melhor que nada)
         if image_type not in ("headshot", "any"):
             result = await self._try_wikipedia_profile(player_name, "any")
             if result:
                 return result
 
-        # 6. Instagram oficial
+        # 8. Instagram oficial
         ig_photo = await get_player_recent_photo(player_name)
         if ig_photo:
             try:
@@ -115,7 +129,10 @@ class ImageManager:
                     if local_path not in self._used_paths:
                         self._used_paths.add(local_path)
                         fname = local_path.split("/")[-1]
-                        register_used_image(player_name, fname)
+                        try:
+                            register_used_image(player_name, fname)
+                        except Exception:
+                            pass
                         log.info(f"Flickr: {player_name} → {fname}")
                         return {
                             "path":        local_path,
@@ -139,7 +156,10 @@ class ImageManager:
             if local_path not in self._used_paths:
                 self._used_paths.add(local_path)
                 fname = local_path.split("/")[-1]
-                register_used_image(player_name, fname)
+                try:
+                    register_used_image(player_name, fname)
+                except Exception:
+                    pass
                 log.info(f"Wikipedia: {player_name} → {fname}")
                 return {
                     "path":        local_path,
@@ -159,7 +179,10 @@ class ImageManager:
                 if local_path not in self._used_paths:
                     self._used_paths.add(local_path)
                     fname = local_path.split("/")[-1]
-                    register_used_image(player_name, fname)
+                    try:
+                        register_used_image(player_name, fname)
+                    except Exception:
+                        pass
                     return {
                         "path":        local_path,
                         "source":      "wikimedia",

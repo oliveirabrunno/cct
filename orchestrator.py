@@ -372,6 +372,10 @@ async def run_stat_card():
         {"headline": headline, "subtext": subtext, "visual_note": "foto_action"},
     )
 
+    if not path:
+        log.warning(f"Stat card para {player_full} não gerado — foto indisponível, post abortado")
+        return
+
     if path and can_publish_feed_post():
         publisher = _make_publisher()
         await publisher.publish_post(str(path), caption, hashtags)

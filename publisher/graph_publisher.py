@@ -43,6 +43,25 @@ class GraphPublisher:
             log.warning("Carousel não publicado — quota diária atingida")
             return False
 
+        # Meta Graph API exige mínimo 2 e máximo 10 imagens por carrossel
+        if not images or len(images) < 2:
+            log.error(
+                f"publish_carousel abortado — {len(images) if images else 0} imagem(s) "
+                "fornecida(s), mínimo exigido pelo Meta: 2"
+            )
+            return False
+        if len(images) > 10:
+            log.warning(f"Carrossel tem {len(images)} slides — truncando para 10 (limite Meta)")
+            images = images[:10]
+
+        # Validar que todos os arquivos existem antes de iniciar uploads
+        for img_path in images:
+            if not img_path or not Path(img_path).exists():
+                log.error(
+                    f"publish_carousel abortado — arquivo inválido ou inexistente: {img_path}"
+                )
+                return False
+
         full_caption = self._build_caption(caption, hashtags)
 
         # 1. Criar container para cada imagem
@@ -71,6 +90,9 @@ class GraphPublisher:
             return False
         if not can_publish_feed_post():
             log.warning("Post único não publicado — quota diária atingida")
+            return False
+        if not image or not Path(image).exists():
+            log.error(f"publish_single abortado — arquivo inválido ou inexistente: {image}")
             return False
         full_caption = self._build_caption(caption, hashtags)
         container_id = self._create_image_container(image, caption=full_caption)
@@ -216,29 +238,52 @@ class GraphPublisher:
     def _upload_image(self, image_path: str) -> str | None:
         """
         A Graph API requer URL pública para imagens.
-        Em produção: fazer upload para S3/Cloudinary/imgbb e retornar URL.
-        Em desenvolvimento: usar imgbb (gratuito, sem auth para imagens temporárias).
+        Tenta imgbb (primário) → freeimage.host (fallback).
         """
-        try:
-            import base64
-            with open(image_path, "rb") as f:
-                img_data = base64.b64encode(f.read()).decode("utf-8")
+        import base64
+        with open(image_path, "rb") as f:
+            img_data = base64.b64encode(f.read()).decode("utf-8")
 
+        # Primário: imgbb
+        for attempt in range(1, 3):
+            try:
+                resp = requests.post(
+                    "https://api.imgbb.com/1/upload",
+                    data={"key": os.getenv("IMGBB_API_KEY", ""), "image": img_data},
+                    timeout=30,
+                )
+                data = resp.json()
+                if data.get("success"):
+                    url = data["data"]["url"]
+                    log.info(f"Imagem uploaded (imgbb): {url}")
+                    return url
+                log.warning(f"imgbb tentativa {attempt}/2: {data}")
+            except Exception as e:
+                log.warning(f"imgbb tentativa {attempt}/2 erro: {e}")
+            time.sleep(5)
+
+        # Fallback: Imgur (anonymous, sem auth, aceito pelo Meta)
+        try:
+            import base64 as _b64
+            with open(image_path, "rb") as f:
+                img_b64 = _b64.b64encode(f.read()).decode()
             resp = requests.post(
-                "https://api.imgbb.com/1/upload",
-                data={"key": os.getenv("IMGBB_API_KEY", ""), "image": img_data},
+                "https://api.imgur.com/3/upload",
+                headers={"Authorization": "Client-ID f0ea04148a54268"},
+                data={"image": img_b64, "type": "base64"},
                 timeout=30,
             )
             data = resp.json()
             if data.get("success"):
-                url = data["data"]["url"]
-                log.info(f"Imagem uploaded: {url}")
+                url = data["data"]["link"]
+                log.info(f"Imagem uploaded (imgur): {url}")
                 return url
-            log.error(f"imgbb falhou: {data}")
-            return None
+            log.error(f"imgur falhou: {data}")
         except Exception as e:
-            log.error(f"Upload de imagem falhou: {e}")
-            return None
+            log.error(f"imgur erro: {e}")
+
+        log.error(f"Upload de imagem falhou em todos os hosts: {image_path}")
+        return None
 
     def _upload_video(self, video_path: str) -> str | None:
         """Upload via catbox.moe (gratuito, sem auth, 72h expiry — suficiente para o Meta processar)."""

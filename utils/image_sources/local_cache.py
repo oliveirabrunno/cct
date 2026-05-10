@@ -10,6 +10,10 @@ log = get_logger(__name__)
 
 DATA_DIR = Path("data/players")
 
+_RESTORE_HEADERS = {
+    "User-Agent": "CafeComTenis/1.0 (https://instagram.com/cafecomteniss; cafecomtenis@gmail.com)"
+}
+
 
 def _slug(name: str) -> str:
     import unicodedata
@@ -63,6 +67,70 @@ class LocalImageCache:
                 "license":     photo.get("license", ""),
                 "credit_text": f"📸 {photo.get('author', 'Wikimedia Commons')}",
             }
+
+        return None
+
+    async def try_restore_from_metadata(
+        self,
+        player_name: str,
+        image_type: str = "any",
+        exclude_filenames: set | None = None,
+    ) -> dict | None:
+        """
+        Quando o arquivo físico não existe mas metadata.json tem url_original,
+        re-baixa a foto do URL original. Usado para recuperar fotos após cache miss
+        no GitHub Actions (arquivos .jpg são gitignored, apenas metadata.json é versionado).
+        """
+        slug = _slug(player_name)
+        player_dir = DATA_DIR / slug
+        meta_path = player_dir / "metadata.json"
+
+        if not meta_path.exists():
+            return None
+
+        with open(meta_path) as f:
+            meta = json.load(f)
+
+        photos = meta.get("photos", [])
+        if image_type != "any":
+            filtered = [p for p in photos if p.get("type") == image_type]
+            photos = filtered if filtered else photos
+
+        excl_files = exclude_filenames or set()
+
+        for photo in photos:
+            filename = photo.get("file", "")
+            if not filename or filename in excl_files:
+                continue
+
+            file_path = player_dir / filename
+            if file_path.exists():
+                continue  # arquivo já existe — get_unused deveria tê-lo encontrado
+
+            url = photo.get("url_original", "")
+            if not url:
+                continue
+
+            try:
+                async with aiohttp.ClientSession(headers=_RESTORE_HEADERS) as session:
+                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+                        resp.raise_for_status()
+                        content = await resp.read()
+
+                async with aiofiles.open(file_path, "wb") as f:
+                    await f.write(content)
+
+                log.info(f"Foto restaurada do metadata: {player_name} → {filename}")
+                return {
+                    "path":        str(file_path),
+                    "filename":    filename,
+                    "source":      photo.get("source", "local"),
+                    "license":     photo.get("license", ""),
+                    "credit_text": f"📸 {photo.get('author', 'Wikimedia Commons')}",
+                }
+            except Exception as e:
+                log.warning(f"Falha ao restaurar {filename} para {player_name} ({url}): {e}")
+                continue
 
         return None
 

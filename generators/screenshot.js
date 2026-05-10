@@ -23,7 +23,12 @@ async function main() {
 
   const browser = await puppeteer.launch({
     headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--allow-file-access-from-files",  // permite CSS/img file:// dentro de páginas file://
+    ],
   });
 
   const page = await browser.newPage();
