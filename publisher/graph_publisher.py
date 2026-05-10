@@ -212,8 +212,35 @@ class GraphPublisher:
         if "id" in data:
             log.info(f"Publicado! Post ID: {data['id']}")
             return True
+
         log.error(f"Erro ao publicar: {data}")
+
+        # Meta às vezes publica o container e retorna erro ao mesmo tempo.
+        # Aguardar 5s e confirmar via API antes de declarar falha.
+        time.sleep(5)
+        if self._container_already_published(container_id):
+            log.warning(
+                f"Container {container_id} foi publicado pelo Meta apesar do erro de API "
+                "— tratando como sucesso para evitar dupla publicação"
+            )
+            return True
+
         return False
+
+    def _container_already_published(self, container_id: str) -> bool:
+        """Confirma via API se um container já foi publicado (evita dupla publicação)."""
+        try:
+            resp = requests.get(
+                f"{GRAPH_API}/{container_id}",
+                params={"fields": "status_code", "access_token": ACCESS_TOKEN},
+                timeout=15,
+            )
+            status = resp.json().get("status_code", "")
+            log.info(f"Status do container {container_id}: {status}")
+            return status == "PUBLISHED"
+        except Exception as e:
+            log.warning(f"Falha ao checar status do container {container_id}: {e}")
+            return False
 
     def _wait_and_publish(self, container_id: str, max_wait: int = 300) -> bool:
         """Aguarda processamento de vídeo antes de publicar."""
