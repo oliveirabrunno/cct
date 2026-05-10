@@ -46,6 +46,19 @@ class ImageManager:
             log.info(f"Cache local: {player_name} → {cached['path'].split('/')[-1]}")
             return cached
 
+        # 1b. Fallback local relaxado — ignora exclude_filenames mas mantém exclude_paths.
+        #     Prefere foto local verificada (mesmo que usada recentemente) a ir ao Flickr,
+        #     que pode retornar fotos do jogador errado.
+        cached_any = self.cache.get_unused(
+            player_name, image_type,
+            exclude_paths=self._used_paths,
+            exclude_filenames=set(),
+        )
+        if cached_any:
+            self._used_paths.add(cached_any["path"])
+            log.info(f"Cache local (dedup relaxado): {player_name} → {cached_any['path'].split('/')[-1]}")
+            return cached_any
+
         if not download_if_missing:
             return self._get_placeholder(player_name)
 

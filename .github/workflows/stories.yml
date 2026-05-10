@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: stories-${{ github.run_id }}
+  group: stories
   cancel-in-progress: false
 
 jobs:

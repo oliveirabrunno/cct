@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: trend-detector-${{ github.run_id }}
+  group: trend-detector
   cancel-in-progress: false
 
 jobs:

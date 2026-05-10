@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: live-monitor-${{ github.run_id }}
+  group: live-monitor
   cancel-in-progress: false
 
 jobs:

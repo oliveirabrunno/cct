@@ -91,10 +91,11 @@ async def run_daily_pipeline():
         result = await generate_trend_carousel(player, trend["signals"], news)
 
         if result and result.get("image_paths"):
-            await publisher.publish_carousel(
+            ok = await publisher.publish_carousel(
                 result["image_paths"], result["caption"], result["hashtags"]
             )
-            register_post("trend_carousel", player, description=result["caption"][:100])
+            if ok:
+                register_post("trend_carousel", player, description=result["caption"][:100])
 
             # Story de teaser automático
             story_path = await story_gen.generate_teaser_story(
@@ -297,8 +298,9 @@ async def run_ranking():
     )
 
     if result and result.get("image_paths"):
-        await publisher.publish_carousel(result["image_paths"], result["caption"], result["hashtags"])
-        register_post("ranking_carousel", str(_date.today()), description=result["caption"][:100])
+        ok = await publisher.publish_carousel(result["image_paths"], result["caption"], result["hashtags"])
+        if ok:
+            register_post("ranking_carousel", str(_date.today()), description=result["caption"][:100])
         print(f"Ranking gerado: {len(result['image_paths'])} slides | {result['caption'][:100]}...")
 
 
@@ -378,8 +380,9 @@ async def run_stat_card():
 
     if path and can_publish_feed_post():
         publisher = _make_publisher()
-        await publisher.publish_post(str(path), caption, hashtags)
-        register_post("stat_card", player, description=headline)
+        ok = await publisher.publish_post(str(path), caption, hashtags)
+        if ok:
+            register_post("stat_card", player, description=headline)
         log.info(f"Stat card publicado: {headline}")
 
         story_gen = StoryGenerator()
@@ -476,8 +479,9 @@ async def run_night_recap():
 
     if reel_path and can_publish_feed_post():
         publisher = _make_publisher()
-        await publisher.publish_reel(reel_path, caption, hashtags)
-        register_post("night_recap", str(_date.today()), description=caption[:80])
+        ok = await publisher.publish_reel(reel_path, caption, hashtags)
+        if ok:
+            register_post("night_recap", str(_date.today()), description=caption[:80])
         log.info(f"Night recap reel publicado: {caption[:60]}...")
     elif not can_publish_feed_post():
         log.warning("Night recap: quota Meta atingida")
