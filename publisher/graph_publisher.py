@@ -98,6 +98,7 @@ class GraphPublisher:
         container_id = self._create_image_container(image, caption=full_caption)
         if not container_id:
             return False
+        time.sleep(8)  # aguardar processamento da imagem pelo Meta antes de publicar
         return self._publish_container(container_id)
 
     async def publish_post(self, image: str, caption: str, hashtags: list[str] = None) -> bool:

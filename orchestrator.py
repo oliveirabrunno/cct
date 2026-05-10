@@ -521,12 +521,15 @@ async def run_publish_match():
                                tournament=tournament, round_name=round_name)
     result = await generate_match_result_card(ctx)
     if result:
-        await publisher.publish_post(result["image_path"], result["caption"], result["hashtags"])
-        register_post("match_result", match_key, description=result["caption"][:100])
-        log.info(f"Publicado: {winner} def. {loser}")
-        print(f"\nCard: {result['image_path']}")
-        print(f"Stat: {result['stat']}")
-        print(f"Legenda: {result['caption'][:150]}...")
+        ok = await publisher.publish_post(result["image_path"], result["caption"], result["hashtags"])
+        if ok:
+            register_post("match_result", match_key, description=result["caption"][:100])
+            log.info(f"Publicado: {winner} def. {loser}")
+            print(f"\nCard: {result['image_path']}")
+            print(f"Stat: {result['stat']}")
+            print(f"Legenda: {result['caption'][:150]}...")
+        else:
+            print("\nERRO ao publicar — card gerado mas não postado no Instagram")
     else:
         print("\nERRO ao gerar card de resultado")
 
