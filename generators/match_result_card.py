@@ -249,6 +249,37 @@ async def generate_match_result_card(match_context: dict) -> dict | None:
     )
     img_path = img_data.get("path") if img_data else None
 
+    # Fallback: foto do perdedor (mais famoso em upsets — melhor que nada)
+    if not img_path:
+        log.warning(f"Sem foto para {winner} — tentando foto de {loser} como fallback")
+        img_data = await img_manager.get_player_image(
+            loser,
+            image_type="any",
+            tournament_name=tournament,
+        )
+        img_path = img_data.get("path") if img_data else None
+        if img_path:
+            log.info(f"Fallback OK: usando foto de {loser} no card de {winner}")
+
+    if not img_path:
+        log.warning(f"Nenhuma imagem encontrada para {winner} nem {loser} — abortando card")
+        return None
+
+    # Validar imagem com PIL e copiar para /tmp/ — garante que o Chromium
+    # consegue ler via file:// sem problemas de permissão ou arquivo corrompido
+    from PIL import Image as _PILImage
+    tmp_img_path = f"/tmp/match_result_bg_{int(time.time())}.jpg"
+    try:
+        with _PILImage.open(img_path) as pil_img:
+            pil_img.convert("RGB").save(tmp_img_path, "JPEG", quality=95)
+        img_path = tmp_img_path
+        log.info(f"Imagem validada e copiada para {tmp_img_path}")
+    except Exception as e:
+        log.error(
+            f"Imagem inválida ou inacessível para '{winner}': {img_path} — {e} — abortando card"
+        )
+        return None
+
     # 3. Gerar HTML
     html = _build_result_html(
         headline=headline_card,
@@ -305,8 +336,12 @@ def _pil_fallback_card(ctx: dict, bg_path: str | None, output_path: str) -> str 
                     alpha = int(150 + (105 * row / H))
                     od.line([(0, row), (W, row)], fill=(0, 0, 0, min(alpha, 255)))
                 img = Image.alpha_composite(bg.convert("RGBA"), overlay).convert("RGB")
-            except Exception:
-                pass
+            except Exception as e:
+                log.error(
+                    f"_pil_fallback_card: falha ao abrir imagem '{bg_path}': {e} "
+                    "— abortando para evitar card sem foto no Instagram"
+                )
+                return None
 
         draw = ImageDraw.Draw(img)
         lime  = (200, 241, 53)
@@ -388,7 +423,10 @@ async def process_and_publish_match(match: dict, publisher) -> bool:
     if not result:
         return False
 
-    await publisher.publish_post(result["image_path"], result["caption"], result["hashtags"])
-    register_post("match_result", match_key, description=result["caption"][:100])
-    log.info(f"Resultado publicado: {winner} def. {loser} {score}")
-    return True
+    ok = await publisher.publish_post(result["image_path"], result["caption"], result["hashtags"])
+    if ok:
+        register_post("match_result", match_key, description=result["caption"][:100])
+        log.info(f"Resultado publicado: {winner} def. {loser} {score}")
+    else:
+        log.error(f"Falha ao publicar resultado {winner} def. {loser} — dedup NÃO registrado")
+    return ok
