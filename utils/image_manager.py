@@ -128,6 +128,7 @@ class ImageManager:
     ) -> dict | None:
         try:
             from utils.image_sources.flickr import search_player_images as flickr_search
+            from utils.dedup import is_duplicate_image_url, register_image_url, register_used_image
             photos = flickr_search(
                 player_name,
                 count=6,
@@ -137,6 +138,11 @@ class ImageManager:
                 url = photo.get("url", "")
                 if not url:
                     continue
+                    
+                if is_duplicate_image_url(url):
+                    log.debug(f"Flickr URL já usada (dedup), pulando: {url}")
+                    continue
+
                 try:
                     local_path = await self.cache.download_and_save(player_name, photo, image_type)
                     if local_path not in self._used_paths:
@@ -144,6 +150,7 @@ class ImageManager:
                         fname = local_path.split("/")[-1]
                         try:
                             register_used_image(player_name, fname)
+                            register_image_url(url, player_name, "flickr")
                         except Exception:
                             pass
                         log.info(f"Flickr: {player_name} → {fname}")

@@ -85,12 +85,11 @@ class StoryGenerator:
     # ─── BREAKING NEWS ────────────────────────────────────────────────────────
 
     async def generate_breaking_story(self, match_result: dict) -> str:
-        player = match_result.get("winner", "")
-        canvas = await self._build_base_canvas(player, "action")
-        canvas = self._apply_gradient(canvas, start_at=0.30)
-
         winner    = match_result.get("winner", "").upper()
         loser     = match_result.get("loser", "")
+        
+        canvas = await self._build_base_canvas(winner, "action", fallback_player=loser)
+        canvas = self._apply_gradient(canvas, start_at=0.30)
         score     = match_result.get("score", "")
         tournament = match_result.get("tournament", "")
 
@@ -186,15 +185,26 @@ class StoryGenerator:
 
     # ─── HELPERS ──────────────────────────────────────────────────────────────
 
-    async def _build_base_canvas(self, player_name: str, image_type: str) -> Image.Image:
+    async def _build_base_canvas(self, player_name: str, image_type: str, fallback_player: str = "") -> Image.Image:
         canvas = Image.new("RGB", (self.STORY_W, self.STORY_H), self.BRAND_DARK)
         if not player_name:
             return canvas
+            
         img_data = await self.img_manager.get_player_image(player_name, image_type)
+        
+        if not img_data or not img_data.get("path"):
+            if fallback_player:
+                log.warning(f"Sem foto para {player_name} — tentando foto do adversário {fallback_player}")
+                img_data = await self.img_manager.get_player_image(fallback_player, image_type)
+                
         if img_data and img_data.get("path"):
-            player_img = Image.open(img_data["path"]).convert("RGB")
-            player_img = self._fit_to_story(player_img)
-            canvas.paste(player_img, (0, 0))
+            try:
+                player_img = Image.open(img_data["path"]).convert("RGB")
+                player_img = self._fit_to_story(player_img)
+                canvas.paste(player_img, (0, 0))
+            except Exception as e:
+                log.error(f"Falha ao processar imagem para story base canvas: {e}")
+                
         return canvas
 
     def _fit_to_story(self, img: Image.Image, target: tuple = None) -> Image.Image:

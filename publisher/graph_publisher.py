@@ -32,6 +32,53 @@ class GraphPublisher:
         if not ACCESS_TOKEN or not IG_USER_ID:
             log.warning("META_ACCESS_TOKEN ou META_IG_USER_ID não configurados")
 
+    def is_duplicate_in_ig(self, keywords: list[str], hours: int = 12) -> bool:
+        """
+        Verifica diretamente na Graph API se um post recente no feed
+        já contém as palavras-chave, evitando duplicação caso o cache local falhe.
+        """
+        if not self._is_configured():
+            return False
+
+        from datetime import datetime, timedelta
+
+        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        params = {
+            "fields": "caption,timestamp",
+            "limit": "15",
+            "access_token": ACCESS_TOKEN,
+        }
+
+        try:
+            resp = requests.get(f"{GRAPH_API}/{IG_USER_ID}/media", params=params, timeout=15)
+            data = resp.json()
+            if "data" not in data:
+                return False
+
+            for item in data["data"]:
+                timestamp_str = item.get("timestamp", "")
+                if timestamp_str:
+                    try:
+                        # "2024-05-10T15:00:00+0000" -> parsing simplificado
+                        dt = datetime.strptime(timestamp_str[:19], "%Y-%m-%dT%H:%M:%S")
+                        if dt < cutoff:
+                            continue  # post muito antigo, ignorar o resto
+                    except ValueError:
+                        pass
+
+                caption = item.get("caption", "").lower()
+                if not caption:
+                    continue
+                
+                # Exige que TODAS as keywords estejam na legenda
+                if all(kw.lower() in caption for kw in keywords):
+                    log.info(f"IG Source of Truth: duplicado detectado para keywords {keywords}")
+                    return True
+        except Exception as e:
+            log.warning(f"Falha ao consultar duplicatas na Graph API: {e}")
+
+        return False
+
     # ─── CARROSSEL ────────────────────────────────────────────────────────────
 
     async def publish_carousel(

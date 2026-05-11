@@ -84,7 +84,10 @@ async def run_daily_pipeline():
         news   = trend.get("news", [])
 
         if is_duplicate("trend_carousel", player):
-            log.info(f"Pulando {player} — publicado recentemente")
+            log.info(f"Pulando {player} — publicado recentemente (cache local)")
+            continue
+        if hasattr(publisher, "is_duplicate_in_ig") and publisher.is_duplicate_in_ig([player], hours=48):
+            log.info(f"Pulando {player} — publicado recentemente (Graph API)")
             continue
 
         log.info(f"Gerando carrossel + story + reel para {player}...")
@@ -364,8 +367,13 @@ async def run_stat_card():
         f"#{player_full.split()[-1].lower().replace('-', '')}",
     ]
 
+    publisher = _make_publisher()
+
     if is_duplicate("stat_card", player, hours=18):
-        log.info(f"Stat card para {player} já publicado hoje — pulando")
+        log.info(f"Stat card para {player} já publicado hoje — pulando (cache local)")
+        return
+    if hasattr(publisher, "is_duplicate_in_ig") and publisher.is_duplicate_in_ig([player], hours=18):
+        log.info(f"Stat card para {player} já publicado hoje — pulando (Graph API)")
         return
 
     path = await generate_card_with_player(
@@ -379,7 +387,6 @@ async def run_stat_card():
         return
 
     if path and can_publish_feed_post():
-        publisher = _make_publisher()
         ok = await publisher.publish_post(str(path), caption, hashtags)
         if ok:
             register_post("stat_card", player, description=headline)
@@ -512,13 +519,17 @@ async def run_publish_match():
     from generators.match_result_card import generate_match_result_card
     from utils.dedup import is_duplicate, register_post
 
+    publisher = _make_publisher()
+
     match_key = f"{winner}_{loser}_{score}".lower().replace(" ", "_")
     if is_duplicate("match_result", match_key, hours=12):
-        log.info(f"Resultado {winner} vs {loser} já publicado — pulando")
+        log.info(f"Resultado {winner} vs {loser} já publicado — pulando (cache local)")
         print("Resultado já publicado recentemente.")
         return
-
-    publisher = _make_publisher()
+    if hasattr(publisher, "is_duplicate_in_ig") and publisher.is_duplicate_in_ig([winner, loser], hours=12):
+        log.info(f"Resultado {winner} vs {loser} já publicado — pulando (Graph API)")
+        print("Resultado já publicado recentemente.")
+        return
 
     log.info(f"Publicando resultado: {winner} def. {loser} {score} — {tournament} {round_name}")
     ctx = build_match_context(winner=winner, loser=loser, score=score,

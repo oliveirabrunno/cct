@@ -63,48 +63,48 @@ def _build_queries(
     year: int,
 ) -> list[str]:
     """
-    Gera queries em ordem de especificidade decrescente.
-    Usa nome completo entre aspas (para jogadores menos famosos) + fallback só sobrenome.
+    Gera queries restritas. 
+    Apenas Tier 1 (Torneio) e Tier 2 (Superfície).
+    Removemos fallback genérico para garantir a "regra dura" de temporada.
     """
-    last_name = player_name.split()[-1]
     queries = []
 
     # Tier 1: Nome completo + torneio específico (mais preciso)
     if tournament_name:
         terms = TOURNAMENT_TERMS.get(tournament_name, [tournament_name])
-        queries.append(f'"{player_name}" tennis {terms[0]} {year}')
-        queries.append(f'"{player_name}" {terms[0]} tennis')
+        queries.append(f'"{player_name}" tennis player {terms[0]} {year}')
+        queries.append(f'"{player_name}" {terms[0]} tennis player')
 
     # Tier 2: Nome completo + superfície + ano
     surface_terms = SURFACE_TERMS.get(season, ["tennis"])
-    queries.append(f'"{player_name}" tennis {surface_terms[0]} {year}')
+    queries.append(f'"{player_name}" tennis player {surface_terms[0]} {year}')
 
-    # Tier 3: Nome completo + tênis + ano (sem superfície — mais amplo)
-    queries.append(f'"{player_name}" tennis {year}')
+    # Tier 3: Nome completo + ano (para o caso de não colocarem superfície)
+    queries.append(f'"{player_name}" tennis player {year}')
 
-    # Tier 4: Só sobrenome + tênis (fallback para jogadores com nome longo/estrangeiro)
-    if last_name.lower() != player_name.split()[0].lower():  # nome ≠ sobrenome
-        queries.append(f'"{last_name}" tennis {year}')
-        queries.append(f'"{last_name}" tennis')
-
-    # Tier 5: Nome completo sem ano (último recurso)
-    queries.append(f'"{player_name}" tennis')
-
-    # Deduplicar mantendo ordem
     seen: set[str] = set()
     return [q for q in queries if not (q in seen or seen.add(q))]
 
 
 def _name_ok(title: str, tags: str, player_name: str) -> bool:
-    """Exige sobrenome (e primeiro nome se >= 5 chars) em título OU tags."""
+    """Exige sobrenome como palavra exata (word boundary) em título OU tags."""
     combined = (title + " " + tags).lower()
     parts = player_name.lower().split()
     last = parts[-1]
-    if last not in combined:
+    
+    # Usa regex word boundaries para evitar que 'silva' dê match em 'dasilva'
+    if not re.search(rf'\b{re.escape(last)}\b', combined):
         return False
+        
     first = parts[0]
-    if len(first) >= 5 and first not in combined:
+    if len(first) >= 4 and not re.search(rf'\b{re.escape(first)}\b', combined):
         return False
+        
+    # Rejeita matches óbvios de homônimos de outras áreas que já causaram bugs
+    blacklist = ["jiu jitsu", "bjj", "fighter", "ufc", "mma", "helicopter", "aviation"]
+    if any(bad_word in combined for bad_word in blacklist):
+        return False
+        
     return True
 
 
