@@ -25,7 +25,8 @@ class ImageManager:
         player_name: str,
         image_type: str = "any",
         download_if_missing: bool = True,
-        tournament_name: str | None = None,
+        tournament_name: str = None,
+        year: int = None,
     ) -> dict | None:
         if not player_name:
             return self._get_placeholder("Desconhecido")
