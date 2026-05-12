@@ -64,7 +64,6 @@ def search_cc_player_photo(player_name: str, year: int = None, tournament_name: 
         params = {
             "q":       query,
             "tbm":     "isch",
-            "tbs":     "sur:cl",     # Creative Commons licensed
             "api_key": SERPAPI_KEY,
             "num":     5,
         }
@@ -115,7 +114,6 @@ def search_player_images(player_name: str, count: int = 4, year: int = None, tou
     params = {
         "q":       query,
         "tbm":     "isch",
-        "tbs":     "sur:cl",
         "api_key": SERPAPI_KEY,
         "num":     10,
     }
