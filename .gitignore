@@ -52,6 +52,9 @@ data/players/**/*.jpeg
 data/players/**/*.png
 data/players/**/*.webp
 
+# ─── Claude Code (configurações locais) ──────────────────────────────────────
+.claude/
+
 # ─── Sistema ─────────────────────────────────────────────────────────────────
 .DS_Store
 .DS_Store?

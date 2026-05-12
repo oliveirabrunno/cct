@@ -1,0 +1,15 @@
+{
+  "player": "Ann Li",
+  "slug": "ann-li",
+  "photos": [
+    {
+      "file": "any_01.jpg",
+      "type": "any",
+      "source": "flickr",
+      "license": "CC BY 2.0",
+      "author": "Gaël Marziou",
+      "url_original": "https://live.staticflickr.com/4354/37100365971_89da9f85fc_c.jpg",
+      "downloaded_at": "2026-05-09"
+    }
+  ]
+}

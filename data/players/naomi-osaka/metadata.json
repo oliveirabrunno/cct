@@ -1,0 +1,15 @@
+{
+  "player": "Naomi Osaka",
+  "slug": "naomi-osaka",
+  "photos": [
+    {
+      "file": "any_01.jpg",
+      "type": "any",
+      "source": "flickr",
+      "license": "CC BY 2.0",
+      "author": "pbepmaop98",
+      "url_original": "https://live.staticflickr.com/65535/49384180057_963de57e09_c.jpg",
+      "downloaded_at": "2026-05-09"
+    }
+  ]
+}

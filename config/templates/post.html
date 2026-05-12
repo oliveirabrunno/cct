@@ -1,0 +1,159 @@
+<!doctype html>
+<!--
+  ============================================================
+  CAFÉ COM TÊNIS — INSTAGRAM POST TEMPLATE (1080×1080)
+  Layout Editorial (foto full-bleed + filete colorido + serif)
+  ============================================================
+  USO (Claude Code):
+  1) Edite o JSON dentro de <script id="post-data"> abaixo.
+  2) Abra em browser ou capture via puppeteer (viewport 1080×1080).
+  ============================================================
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Post · Café com Tênis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300..800&family=Geist+Mono:wght@400..700&display=swap" rel="stylesheet">
+
+<script id="post-data" type="application/json">
+{
+  "surface": "clay",
+  "badge": "Insight",
+  "kicker": "Roland Garros · Estatística",
+  "title": "Alcaraz tem o melhor saque do circuito no saibro",
+  "subtitle": "78% de pontos no 1º serviço em Paris — número que ninguém alcança desde Nadal em 2017.",
+  "image": "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=1600&q=80",
+  "credit": "Reuters / Yves Herman"
+}
+</script>
+
+<style>
+  html, body { margin: 0; padding: 0; background: #1a1a1c; }
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh;
+         font-family: Geist, system-ui, sans-serif; }
+
+  #frame {
+    width: 1080px; height: 1080px; flex: 0 0 auto;
+    position: relative; overflow: hidden;
+    transform-origin: center center;
+    background: #000; color: #fff;
+    box-shadow: 0 24px 80px rgba(0,0,0,.6);
+  }
+  @media (max-width: 1100px)  { #frame { transform: scale(calc(100vw / 1080)); } }
+  @media (max-height: 1100px) { #frame { transform: scale(calc(100vh / 1080)); } }
+
+  .photo { position:absolute; inset:0; width:100%; height:100%;
+           object-fit:cover; object-position:center; }
+  .gradient {
+    position:absolute; inset:0; pointer-events:none;
+    background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 22%,
+                                         rgba(0,0,0,0) 45%, rgba(0,0,0,.88) 100%);
+  }
+  .topbar {
+    position:absolute; top:48px; left:48px; right:48px; z-index:2;
+    display:flex; justify-content:space-between; align-items:flex-start;
+  }
+  .badge {
+    background: var(--surface-chip); color: var(--surface-chipInk);
+    padding: 12px 20px 11px; border-radius: 4px;
+    font-family: "Geist Mono", ui-monospace, monospace;
+    font-size: 18px; letter-spacing: 0.14em; text-transform: uppercase;
+    font-weight: 600;
+    display: inline-flex; align-items: center; gap: 12px;
+  }
+  .badge::before {
+    content:""; width:7px; height:7px; border-radius:50%;
+    background: var(--surface-chipInk); opacity:.9;
+  }
+  .wordmark {
+    display:inline-flex; align-items:center; gap:10px;
+    color:#fff; font-family:"Instrument Serif", serif;
+    font-size:22px; font-style:italic; line-height:1;
+  }
+  .wordmark svg { width:26px; height:26px; display:block; }
+  .content {
+    position:absolute; left:48px; right:48px; bottom:48px; z-index:2;
+    display:flex; gap:24px; align-items:flex-end;
+  }
+  .stripe {
+    width:5px; align-self:stretch; background: var(--surface-accent);
+    border-radius:2px; margin-bottom:4px; min-height:220px;
+  }
+  .kicker {
+    font-family:"Geist Mono", monospace; color: var(--surface-accent);
+    font-size:18px; letter-spacing:.18em; text-transform:uppercase;
+    font-weight:500; margin-bottom:18px;
+  }
+  .title {
+    font-family:"Instrument Serif", serif; color:#fff;
+    font-size:78px; line-height:1.02; margin:0;
+    font-weight:400; letter-spacing:-.015em; text-wrap:balance;
+  }
+  .subtitle {
+    color: rgba(255,255,255,.82); font-size:24px; line-height:1.35;
+    margin:22px 0 0; max-width:820px; text-wrap:pretty;
+  }
+  .footer-strip {
+    position:absolute; bottom:14px; left:48px; right:48px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:"Geist Mono", monospace; font-size:14px;
+    letter-spacing:.08em; text-transform:uppercase;
+    color: rgba(255,255,255,.55); pointer-events:none;
+  }
+</style>
+</head>
+<body>
+  <div id="frame"></div>
+
+  <script>
+    const SURFACES = {
+      hard:    { primary:'#1E40AF', accent:'#3B82F6', chip:'#1E40AF', chipInk:'#F5F8FF' },
+      grass:   { primary:'#1F6F3C', accent:'#3DA15A', chip:'#1F6F3C', chipInk:'#F2F8EE' },
+      clay:    { primary:'#B4441C', accent:'#E76A2A', chip:'#B4441C', chipInk:'#FFF4EC' },
+      neutral: { primary:'#1A1A1C', accent:'#D4B96A', chip:'#1A1A1C', chipInk:'#F4F1EA' },
+    };
+    const wordmarkSVG = `
+      <span class="wordmark">
+        <svg viewBox="0 0 28 28" aria-hidden="true">
+          <circle cx="14" cy="14" r="12" fill="none" stroke="#fff" stroke-width="1.6"></circle>
+          <path d="M3 9 Q14 14 25 9" fill="none" stroke="#fff" stroke-width="1.6"></path>
+          <path d="M3 19 Q14 14 25 19" fill="none" stroke="#fff" stroke-width="1.6"></path>
+        </svg>
+        <span>café com tênis</span>
+      </span>`;
+
+    function render() {
+      const data = JSON.parse(document.getElementById('post-data').textContent);
+      const s = SURFACES[data.surface] || SURFACES.neutral;
+      const r = document.documentElement.style;
+      r.setProperty('--surface-primary', s.primary);
+      r.setProperty('--surface-accent',  s.accent);
+      r.setProperty('--surface-chip',    s.chip);
+      r.setProperty('--surface-chipInk', s.chipInk);
+
+      document.getElementById('frame').innerHTML = `
+        <img class="photo" src="${data.image}" alt="" />
+        <div class="gradient"></div>
+        <div class="topbar">
+          <div class="badge">${data.badge}</div>
+          ${wordmarkSVG}
+        </div>
+        <div class="content">
+          <div class="stripe"></div>
+          <div style="flex:1; min-width:0;">
+            ${data.kicker ? `<div class="kicker">${data.kicker}</div>` : ''}
+            <h1 class="title">${data.title}</h1>
+            <p class="subtitle">${data.subtitle}</p>
+          </div>
+        </div>
+        <div class="footer-strip">
+          <span>${data.credit || ''}</span>
+          <span>@cafecomteniss</span>
+        </div>`;
+    }
+    render();
+  </script>
+</body>
+</html>

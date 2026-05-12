@@ -35,6 +35,7 @@ from scrapers.google_news import fetch_recent_news, search_news
 from scrapers.tournament_draw import CURRENT_TOURNAMENT
 CURRENT_TOURNAMENT_SHORT = CURRENT_TOURNAMENT.get("name", "ATP Tour")
 from scrapers.reddit_tennis import fetch_hot_posts
+from scrapers.atp_iq import get_shocking_stat
 from analytics.trend_detector import TrendDetector
 from generators.content import ContentGenerator
 from generators.carousel import generate_trend_carousel
@@ -201,6 +202,69 @@ async def run_test_carousel():
         print(f"Legenda: {result['caption'][:100]}...")
     else:
         print("\nERRO ao gerar carrossel")
+
+
+async def run_afternoon_insight():
+    """
+    Novo fluxo educativo de Insights (15h00) usando ATP IQ e gráficos Matplotlib.
+    """
+    from generators.content import ContentGenerator, _load_prompt
+    from generators.visual import generate_post
+    from publisher.rate_limiter import can_publish_feed_post
+
+    log.info("=== Afternoon Insight 15:00 BRT ===")
+    
+    detector = TrendDetector()
+    trending = await detector.check_all_players()
+    player = trending[0]["player"] if trending else "Carlos Alcaraz"
+    
+    stat_data = get_shocking_stat(player)
+    
+    content_gen = ContentGenerator()
+    system = _load_prompt("base_voice")
+    
+    prompt = (
+        f"Crie uma legenda para o Instagram sobre este insight do {player}.\n"
+        f"Headline: {stat_data['headline']}\n"
+        f"Contexto: {stat_data['subtext']}\n\n"
+        "REGRAS ABSOLUTAS:\n"
+        "- Máx 70 palavras, tom educativo de quem entende de tênis.\n"
+        "- Termine com uma pergunta para engajar.\n"
+        "Responda SOMENTE JSON: {\"caption\":\"\"}"
+    )
+    
+    raw = content_gen._call_claude(system, prompt, max_tokens=300)
+    data = content_gen._parse_json_response(raw)
+    caption = data.get("caption", stat_data["subtext"])
+    
+    post_data = {
+        "surface": "neutral",
+        "badge": "Insight",
+        "kicker": "ATP IQ · Estatística Avançada",
+        "title": stat_data['headline'],
+        "subtitle": stat_data['subtext'],
+        "image": f"file://{os.path.abspath(stat_data['chart_path'])}" if stat_data.get("chart_path") else "",
+        "credit": "Data: ATP Tennis IQ / PIF"
+    }
+    
+    path = await generate_post("insight", {"player": player}, post_data)
+    
+    if not path:
+        log.error("Falha ao gerar post do insight")
+        return
+        
+    publisher = _make_publisher()
+    if hasattr(publisher, "is_duplicate_in_ig") and publisher.is_duplicate_in_ig([player], hours=18):
+        log.warning(f"{player} já apareceu nas últimas 18h — skip insight")
+        return
+
+    import re
+    hashtags = re.findall(r"#\w+", caption)
+    caption_clean = re.sub(r"\s*#\w+", "", caption).strip()
+    
+    ok = await publisher.publish_post(path, caption_clean, hashtags)
+    if ok:
+        register_post("afternoon_insight", player, description=stat_data['headline'])
 
 
 async def run_test_story():
@@ -645,6 +709,7 @@ async def main():
         "daily":          run_daily_pipeline,
         "on-this-day":    run_on_this_day,
         "stat-card":      run_stat_card,
+        "afternoon-insight": run_afternoon_insight,
         "night-recap":    run_night_recap,
         "trends":         run_trend_check,
         "live":           run_live_monitor,

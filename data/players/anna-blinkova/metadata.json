@@ -1,0 +1,15 @@
+{
+  "player": "Anna Blinkova",
+  "slug": "anna-blinkova",
+  "photos": [
+    {
+      "file": "any_01.jpg",
+      "type": "any",
+      "source": "flickr",
+      "license": "CC BY-SA 2.0",
+      "author": "Lucian Nuță",
+      "url_original": "https://live.staticflickr.com/65535/54325064080_2208d906ae_c.jpg",
+      "downloaded_at": "2026-05-09"
+    }
+  ]
+}

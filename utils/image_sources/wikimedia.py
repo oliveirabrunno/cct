@@ -138,9 +138,10 @@ def _ascii(s: str) -> str:
 
 def _name_in_url(url: str, player_name: str) -> bool:
     """Verifica se o nome do jogador está na URL.
-    - Normaliza diacríticos (Świątek → swiatek).
+    - Normaliza diacríticos (Świątek → swiatek, João → joao).
     - Exige sobrenome sempre.
-    - Exige primeiro nome quando >= 5 chars (evita Christian_Ruud para Casper Ruud)."""
+    - Exige primeiro nome quando >= 4 chars (pega João=4, Coco=4, evita Ben=3).
+      Isso impede "Kelvin_Clay_Fonseca" passar pela validação de "João Fonseca"."""
     url_ascii = _ascii(url)
     parts = [_ascii(p) for p in player_name.split() if len(p) > 2]
     if not parts:
@@ -149,7 +150,7 @@ def _name_in_url(url: str, player_name: str) -> bool:
     if last not in url_ascii:
         return False
     first = parts[0]
-    if len(first) >= 5 and first not in url_ascii:
+    if len(first) >= 4 and first not in url_ascii:
         return False
     return True
 
@@ -169,6 +170,7 @@ def search_player_images(
     seen_urls: set[str] = set()
     results:   list[dict] = []
 
+    first_name = player_name.split()[0]
     clay_terms = SEASON_TERMS.get(season, ["tennis"])
     queries = [
         # 1. Nome completo + tennis + temporada + ano (mais preciso)
@@ -176,9 +178,10 @@ def search_player_images(
         f'"{player_name}" tennis {clay_terms[0]} {PREV_YEAR}',
         # 2. Nome completo + tennis (qualquer temporada)
         f'"{player_name}" tennis',
-        # 3. intitle com sobrenome + tennis (fallback — sempre inclui tennis)
-        f'intitle:"{last_name}" tennis {clay_terms[0]}',
-        f'intitle:"{last_name}" tennis',
+        # 3. intitle com sobrenome + primeiro nome + tennis
+        # Nunca só sobrenome: "Fonseca" pega jiu-jitsu, "Wang" pega qualquer Wang
+        f'intitle:"{last_name}" "{first_name}" tennis {clay_terms[0]}',
+        f'intitle:"{last_name}" "{first_name}" tennis',
     ]
 
     for query in queries:

@@ -8,7 +8,7 @@ import asyncio
 import time
 from pathlib import Path
 from generators.content import ContentGenerator, _load_prompt
-from generators.visual import html_to_png, BRAND_KIT
+from generators.visual import generate_post
 from utils.image_manager import ImageManager
 from utils.logger import get_logger
 
@@ -16,190 +16,6 @@ log = get_logger(__name__)
 
 OUTPUT_DIR = Path("output/queue")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-CARD_W = 1080
-CARD_H = 1080
-
-
-def _build_result_html(
-    headline: str,
-    subtext: str,
-    stat: str,
-    label: str,
-    player_img_path: str | None,
-    is_upset: bool,
-) -> str:
-    """Gera HTML do card de resultado. Inspirado no estilo limpo do ATP Tour."""
-
-    bg_image_css = ""
-    if player_img_path:
-        # Garantir caminho absoluto para o Puppeteer renderizar corretamente
-        abs_path = str(Path(player_img_path).resolve())
-        bg_image_css = f"background-image: url('file://{abs_path}');"
-
-    accent = "#C8F135" if not is_upset else "#FF6B35"  # lima ou laranja para upset
-    label_bg = "#FF6B35" if is_upset else "#C8F135"
-    label_color = "#FFFFFF" if is_upset else "#0A0A0A"
-
-    return f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-{BRAND_KIT}
-
-* {{ margin: 0; padding: 0; box-sizing: border-box; }}
-
-body {{
-  width: {CARD_W}px;
-  height: {CARD_H}px;
-  background: #0A0A0A;
-  font-family: var(--font-body);
-  overflow: hidden;
-  position: relative;
-}}
-
-/* Foto do vencedor — full bleed */
-.bg-photo {{
-  position: absolute;
-  inset: 0;
-  {bg_image_css}
-  background-size: cover;
-  background-position: center top;
-  background-repeat: no-repeat;
-}}
-
-/* Gradient escuro de baixo para cima (lê-se de baixo) */
-.gradient-overlay {{
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to top,
-    rgba(10,10,10,0.98) 0%,
-    rgba(10,10,10,0.85) 35%,
-    rgba(10,10,10,0.40) 60%,
-    rgba(10,10,10,0.10) 100%
-  );
-}}
-
-/* Label no topo esquerdo */
-.label {{
-  position: absolute;
-  top: 52px;
-  left: 52px;
-  background: {label_bg};
-  color: {label_color};
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 22px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  padding: 8px 20px;
-  border-radius: 4px;
-}}
-
-/* Logo no topo direito */
-.logo {{
-  position: absolute;
-  top: 52px;
-  right: 52px;
-  color: {accent};
-  font-family: var(--font-title);
-  font-size: 28px;
-  letter-spacing: 1px;
-}}
-
-/* Bloco principal de texto (baixo) */
-.content {{
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 0 52px 56px;
-}}
-
-/* Headline: nome do vencedor + quem perdeu */
-.headline {{
-  font-family: var(--font-title);
-  font-size: 88px;
-  line-height: 0.95;
-  color: #FFFFFF;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 18px;
-  /* sombra para legibilidade sobre foto */
-  text-shadow: 2px 3px 12px rgba(0,0,0,0.9);
-}}
-
-.headline .winner-accent {{
-  color: {accent};
-}}
-
-/* Score + torneio */
-.subtext {{
-  font-family: var(--font-body);
-  font-size: 36px;
-  font-weight: 700;
-  color: rgba(255,255,255,0.80);
-  letter-spacing: 1px;
-  margin-bottom: 24px;
-}}
-
-/* Stat pill — destaque contextual */
-.stat-pill {{
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(255,255,255,0.10);
-  border: 1px solid rgba(255,255,255,0.20);
-  border-left: 4px solid {accent};
-  padding: 12px 20px;
-  border-radius: 6px;
-  max-width: 100%;
-}}
-
-.stat-pill .stat-icon {{
-  font-size: 20px;
-}}
-
-.stat-pill .stat-text {{
-  font-family: var(--font-body);
-  font-size: 28px;
-  font-weight: 600;
-  color: #FFFFFF;
-  line-height: 1.2;
-}}
-
-/* Handle */
-.handle {{
-  position: absolute;
-  bottom: 18px;
-  right: 52px;
-  font-size: 22px;
-  color: rgba(255,255,255,0.35);
-  font-family: var(--font-body);
-}}
-</style>
-</head>
-<body>
-  <div class="bg-photo"></div>
-  <div class="gradient-overlay"></div>
-
-  <div class="label">{label}</div>
-  <div class="logo">CAFÉ COM TÊNIS</div>
-
-  <div class="content">
-    <div class="headline">{headline}</div>
-    <div class="subtext">{subtext}</div>
-    <div class="stat-pill">
-      <span class="stat-icon">📊</span>
-      <span class="stat-text">{stat}</span>
-    </div>
-  </div>
-
-  <div class="handle">@cafecomteniss</div>
-</body>
-</html>"""
 
 
 async def generate_match_result_card(match_context: dict) -> dict | None:
@@ -241,62 +57,38 @@ async def generate_match_result_card(match_context: dict) -> dict | None:
     hashtags = re.findall(r"#\w+", caption)
     caption_clean = re.sub(r"\s*#\w+", "", caption).strip()
 
-    # 2. Buscar foto do vencedor — passa torneio para Flickr buscar foto específica
-    img_data = await img_manager.get_player_image(
-        winner,
-        image_type="any",
-        tournament_name=tournament,
-    )
-    img_path = img_data.get("path") if img_data else None
+    # Preparar post_data para o template post.html
+    surface_map = {
+        "clay": "clay", "saibro": "clay",
+        "hard": "hard", "rápida": "hard", "sintética": "hard",
+        "grass": "grass", "grama": "grass"
+    }
+    # Tenta descobrir o piso base no torneio, fallback para neutral
+    t_lower = tournament.lower()
+    surface = "neutral"
+    for pt, en in surface_map.items():
+        if pt in t_lower:
+            surface = en
+            break
+    
+    # Roma é saibro
+    if "roma" in t_lower or "roland garros" in t_lower or "monte-carlo" in t_lower or "madrid" in t_lower:
+        surface = "clay"
 
-    # Fallback: foto do perdedor (mais famoso em upsets — melhor que nada)
-    if not img_path:
-        log.warning(f"Sem foto para {winner} — tentando foto de {loser} como fallback")
-        img_data = await img_manager.get_player_image(
-            loser,
-            image_type="any",
-            tournament_name=tournament,
-        )
-        img_path = img_data.get("path") if img_data else None
-        if img_path:
-            log.info(f"Fallback OK: usando foto de {loser} no card de {winner}")
+    post_data = {
+        "surface": surface,
+        "badge": "ZEBRA!" if is_upset else label,
+        "kicker": f"{tournament} · {round_name}",
+        "title": headline_card,
+        "subtitle": f"{subtext_card}. {stat}",
+        "player_image_query": winner
+    }
 
-    if not img_path:
-        log.warning(f"Nenhuma imagem encontrada para {winner} nem {loser} — abortando card")
-        return None
-
-    # Validar imagem com PIL e copiar para /tmp/ — garante que o Chromium
-    # consegue ler via file:// sem problemas de permissão ou arquivo corrompido
-    from PIL import Image as _PILImage
-    tmp_img_path = f"/tmp/match_result_bg_{int(time.time())}.jpg"
-    try:
-        with _PILImage.open(img_path) as pil_img:
-            pil_img.convert("RGB").save(tmp_img_path, "JPEG", quality=95)
-        img_path = tmp_img_path
-        log.info(f"Imagem validada e copiada para {tmp_img_path}")
-    except Exception as e:
-        log.error(
-            f"Imagem inválida ou inacessível para '{winner}': {img_path} — {e} — abortando card"
-        )
-        return None
-
-    # 3. Gerar HTML
-    html = _build_result_html(
-        headline=headline_card,
-        subtext=subtext_card,
-        stat=stat,
-        label=label,
-        player_img_path=img_path,
-        is_upset=is_upset,
-    )
-
-    # 4. Renderizar PNG
-    output_path = str(OUTPUT_DIR / f"match_result_{int(time.time())}.png")
-    result_path = html_to_png(html, output_path, CARD_W, CARD_H)
+    result_path = await generate_post("match_result", match_context, post_data)
 
     if not result_path:
         # Fallback Pillow
-        result_path = _pil_fallback_card(match_context, img_path, output_path)
+        result_path = _pil_fallback_card(match_context, None, str(OUTPUT_DIR / f"match_result_fallback_{int(time.time())}.png"))
 
     if not result_path:
         log.error(f"Falha ao gerar card para {winner} vs {loser}")

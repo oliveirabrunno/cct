@@ -3,7 +3,7 @@ from utils.image_sources.local_cache import LocalImageCache
 from utils.image_sources.wikimedia import get_player_photos
 from utils.image_sources.wikipedia_profile import get_profile_photo
 from utils.image_sources.player_instagram import get_player_recent_photo
-from utils.image_sources.google_images import search_cc_player_photo
+from utils.image_sources.google_images import search_cc_player_photo, search_player_images
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -76,7 +76,12 @@ class ImageManager:
                 pass
             return restored
 
-        # 4. Flickr — fonte primária: CC, alta qualidade, aware do torneio atual
+        # 3. Google Images (via SerpAPI) — fonte primária temporária para pegar fotos do saibro/temporada atual
+        result = await self._try_google_images(player_name, image_type, tournament_name=tournament_name, year=year)
+        if result:
+            return result
+
+        # 4. Flickr — fonte secundária: CC, alta qualidade, aware do torneio atual
         if _FLICKR_AVAILABLE:
             result = await self._try_flickr(player_name, image_type, tournament_name)
             if result:
@@ -119,6 +124,42 @@ class ImageManager:
         return self._get_placeholder(player_name)
 
     # ── Fontes individuais ────────────────────────────────────────────────────
+
+    async def _try_google_images(self, player_name: str, image_type: str, tournament_name: str = None, year: int = None) -> dict | None:
+        try:
+            from utils.dedup import is_duplicate_image_url, register_image_url, register_used_image
+            photos = search_player_images(player_name, count=5, year=year, tournament_name=tournament_name)
+            for photo in photos:
+                url = photo.get("url", "")
+                if not url:
+                    continue
+
+                if is_duplicate_image_url(url):
+                    log.debug(f"Google Images URL já usada (dedup), pulando: {url}")
+                    continue
+
+                try:
+                    local_path = await self.cache.download_and_save(player_name, photo, image_type)
+                    if local_path not in self._used_paths:
+                        self._used_paths.add(local_path)
+                        fname = local_path.split("/")[-1]
+                        try:
+                            register_used_image(player_name, fname)
+                            register_image_url(url, player_name, "google_images")
+                        except Exception:
+                            pass
+                        log.info(f"Google Images: {player_name} → {fname}")
+                        return {
+                            "path":        local_path,
+                            "source":      "google_images",
+                            "license":     photo.get("license", "CC"),
+                            "credit_text": f"📸 {photo.get('author', 'Google Images')}",
+                        }
+                except Exception as e:
+                    log.debug(f"Google Images download falhou ({player_name}): {e}")
+        except Exception as e:
+            log.warning(f"Google Images indisponível: {e}")
+        return None
 
     async def _try_flickr(
         self,

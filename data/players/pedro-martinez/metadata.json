@@ -1,0 +1,15 @@
+{
+  "player": "Pedro Martinez",
+  "slug": "pedro-martinez",
+  "photos": [
+    {
+      "file": "any_01.jpg",
+      "type": "any",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Pedro%27s_return.jpg/960px-Pedro%27s_return.jpg",
+      "downloaded_at": "2026-05-09"
+    }
+  ]
+}

@@ -40,7 +40,7 @@ def _get_season() -> str:
     return "hard"
 
 
-def search_cc_player_photo(player_name: str) -> dict | None:
+def search_cc_player_photo(player_name: str, year: int = None, tournament_name: str = None) -> dict | None:
     """Busca uma foto CC do jogador no Google Images via SerpAPI."""
     if not SERPAPI_KEY:
         log.debug("SERPAPI_KEY não definida — Google Images pulado")
@@ -49,8 +49,18 @@ def search_cc_player_photo(player_name: str) -> dict | None:
     season  = _get_season()
     queries = SEASON_QUERIES.get(season, SEASON_QUERIES["hard"])
 
+    target_year = year or CURRENT_YEAR
+    
+    if tournament_name:
+        queries = [
+            f"{{player}} tennis {tournament_name} {target_year}",
+            f"{{player}} tennis {tournament_name} action"
+        ]
+    else:
+        queries = SEASON_QUERIES.get(season, SEASON_QUERIES["hard"])
+
     for query_tpl in queries:
-        query = query_tpl.format(player=player_name, year=CURRENT_YEAR)
+        query = query_tpl.format(player=player_name, year=target_year)
         params = {
             "q":       query,
             "tbm":     "isch",
@@ -89,15 +99,19 @@ def search_cc_player_photo(player_name: str) -> dict | None:
     return None
 
 
-def search_player_images(player_name: str, count: int = 4) -> list[dict]:
+def search_player_images(player_name: str, count: int = 4, year: int = None, tournament_name: str = None) -> list[dict]:
     """Retorna múltiplas fotos CC do jogador para variedade de slides."""
     if not SERPAPI_KEY:
         return []
 
-    season  = _get_season()
-    query   = SEASON_QUERIES.get(season, SEASON_QUERIES["hard"])[0].format(
-        player=player_name, year=CURRENT_YEAR
-    )
+    target_year = year or CURRENT_YEAR
+    
+    if tournament_name:
+        query = f"{player_name} tennis {tournament_name} {target_year}"
+    else:
+        query = SEASON_QUERIES.get(season, SEASON_QUERIES["hard"])[0].format(
+            player=player_name, year=target_year
+        )
     params = {
         "q":       query,
         "tbm":     "isch",

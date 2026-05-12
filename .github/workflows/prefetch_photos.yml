@@ -1,0 +1,89 @@
+name: Prefetch Fotos — Segunda 03h BRT
+
+# Pré-carrega fotos dos top 100 ATP + WTA no cache toda segunda-feira às 03:00 BRT (06:00 UTC).
+# Roda ANTES do ranking semanal (08h) para garantir que todos os jogadores relevantes
+# já tenham imagem quando o orchestrator processar partidas e rankings.
+# Também pode ser acionado manualmente via workflow_dispatch.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      top_n:
+        description: "Quantos jogadores por tour (default: 100)"
+        required: false
+        default: "100"
+      tournament:
+        description: "Torneio atual para buscas Flickr específicas (ex: Roland Garros)"
+        required: false
+        default: ""
+
+concurrency:
+  group: prefetch-photos
+  cancel-in-progress: false
+
+jobs:
+  prefetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: pip-${{ runner.os }}-
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Cache dados persistentes (dedup DB + fotos de jogadores)
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/database.sqlite
+            data/players
+          key: data-cache-${{ github.run_id }}
+          restore-keys: data-cache-
+
+      - name: Atualizar dados Sackmann (rankings atualizados)
+        run: python scripts/update_sackmann.py
+
+      - name: Prefetch fotos top 100 ATP + WTA
+        env:
+          FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          TOP_N="${{ github.event.inputs.top_n || '100' }}"
+          TOURNAMENT="${{ github.event.inputs.tournament || '' }}"
+          if [ -n "$TOURNAMENT" ]; then
+            python scripts/prefetch_player_photos.py --n "$TOP_N" --tournament "$TOURNAMENT"
+          else
+            python scripts/prefetch_player_photos.py --n "$TOP_N"
+          fi
+
+      - name: Resumo de cobertura
+        run: |
+          echo "=== Jogadores com foto em cache ==="
+          ls data/players/ | wc -l
+          echo "jogadores com pelo menos 1 foto"
+          echo ""
+          echo "=== Quem ainda falta (dry-run) ==="
+          python scripts/prefetch_player_photos.py --dry-run --n 100 2>&1 | tail -20
+
+      - name: Upload cache de fotos como artefato
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: player-photos-cache-${{ github.run_id }}
+          path: data/players/
+          retention-days: 30

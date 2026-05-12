@@ -1,0 +1,15 @@
+{
+  "player": "Gael Monfils",
+  "slug": "gael-monfils",
+  "photos": [
+    {
+      "file": "any_01.jpg",
+      "type": "any",
+      "source": "flickr",
+      "license": "CC BY 2.0",
+      "author": "happyskrappy",
+      "url_original": "https://live.staticflickr.com/65535/48644914496_ab38564551_z.jpg",
+      "downloaded_at": "2026-05-09"
+    }
+  ]
+}

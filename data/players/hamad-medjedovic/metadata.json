@@ -1,0 +1,42 @@
+{
+  "player": "Hamad Medjedovic",
+  "slug": "hamad-medjedovic",
+  "photos": [
+    {
+      "file": "any_01.jpg",
+      "type": "any",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Medjedovic_RGQ23.jpg/960px-Medjedovic_RGQ23.jpg",
+      "downloaded_at": "2026-05-09"
+    },
+    {
+      "file": "any_02.jpg",
+      "type": "any",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Medjedovic_RGQ23.jpg/960px-Medjedovic_RGQ23.jpg",
+      "downloaded_at": "2026-05-09"
+    },
+    {
+      "file": "any_03.jpg",
+      "type": "any",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Medjedovic_RGQ23.jpg/960px-Medjedovic_RGQ23.jpg",
+      "downloaded_at": "2026-05-09"
+    },
+    {
+      "file": "any_04.jpg",
+      "type": "any",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Medjedovic_RGQ23.jpg/960px-Medjedovic_RGQ23.jpg",
+      "downloaded_at": "2026-05-10"
+    }
+  ]
+}

@@ -54,11 +54,13 @@ class ContentGenerator:
             "Crie conteúdo de alta retenção para Instagram, modelo @ri.cred."
         )
         prompt_template = _load_prompt(post_type) or _load_prompt("carousel") or (
-            "Crie um carrossel de 6 slides sobre {player_name}.\n"
+            "Crie um carrossel de slides sobre {player_name}.\n"
             "Dados: {data}\n\n"
             "OUTPUT JSON:\n"
-            '{"slides": [{"slide": 1, "headline": "", "subtext": "", "visual_note": ""}], '
-            '"caption": "", "hashtags": []}'
+            '{"surface": "clay", "badge": "Conteúdo", "credit": "📸", '
+            '"slides": [{"kind": "cover", "kicker": "", "title": "", "subtitle": "", "player_image_query": "{player_name}"}], '
+            '"caption": "Legenda do post", "hashtags": []}\n'
+            'Nota: "kind" pode ser: "cover", "text", "stat", "image", "quote", "outro".'
         )
 
         prompt = prompt_template

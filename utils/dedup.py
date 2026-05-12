@@ -5,6 +5,7 @@ Evita publicar o mesmo conteúdo duas vezes nas últimas 72h.
 
 import hashlib
 import sqlite3
+import unicodedata
 from datetime import datetime, timedelta
 from pathlib import Path
 from utils.logger import get_logger
@@ -42,8 +43,15 @@ def _get_conn() -> sqlite3.Connection:
     return conn
 
 
+def _normalize_string(s: str) -> str:
+    if not s:
+        return ""
+    s = s.lower().strip()
+    return unicodedata.normalize('NFKD', s).encode('ASCII', 'ignore').decode('utf-8')
+
+
 def content_hash(post_type: str, player: str, extra: str = "") -> str:
-    raw = f"{post_type}:{player.lower().strip()}:{extra.lower().strip()}"
+    raw = f"{_normalize_string(post_type)}:{_normalize_string(player)}:{_normalize_string(extra)}"
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
@@ -86,7 +94,7 @@ def register_post(
 
 def register_used_image(player: str, filename: str) -> None:
     """Registra arquivo de imagem como usado (evita repetição por 7 dias)."""
-    key = f"{player.lower().strip()}::{filename}"
+    key = f"{_normalize_string(player)}::{filename}"
     h = hashlib.sha256(key.encode()).hexdigest()[:16]
     with _get_conn() as conn:
         try:
@@ -102,12 +110,13 @@ def register_used_image(player: str, filename: str) -> None:
 
 def get_used_image_filenames(player: str, hours: int = 168) -> set[str]:
     """Retorna filenames de imagens usadas nas últimas `hours` horas para este jogador."""
-    prefix = f"{player.lower().strip()}::"
+    norm_player = _normalize_string(player)
+    prefix = f"{norm_player}::"
     cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
     with _get_conn() as conn:
         rows = conn.execute(
             "SELECT url_preview FROM image_urls WHERE player = ? AND source = 'file' AND used_at > ?",
-            (player, cutoff)
+            (norm_player, cutoff)
         ).fetchall()
     return {r[0] for r in rows}
 

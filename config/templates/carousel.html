@@ -1,0 +1,470 @@
+<!doctype html>
+<!--
+  ============================================================
+  CAFÉ COM TÊNIS — INSTAGRAM CAROUSEL (1080×1350)
+  Layout Editorial — múltiplos slides em um único HTML.
+  ============================================================
+  USO (Claude Code):
+  1) Edite o JSON dentro de <script id="carousel-data"> abaixo.
+  2) Cada item em "slides" vira um cartão 1080×1350 visível na página.
+  3) Para exportar, capture cada [data-slide-index] via puppeteer.
+
+  TIPOS DE SLIDE suportados:
+    - "cover"   → capa: badge + kicker + title + subtitle + foto + "arraste →"
+    - "text"    → bloco textual sobre fundo creme: kicker + title + body
+    - "stat"    → número gigante + caption + body curto
+    - "image"   → foto full-bleed com legenda em pé de página
+    - "quote"   → citação grande em serif italic + atribuição
+    - "outro"   → CTA final ("siga @cafecomteniss")
+  ============================================================
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Carrossel · Café com Tênis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300..800&family=Geist+Mono:wght@400..700&display=swap" rel="stylesheet">
+
+<script id="carousel-data" type="application/json">
+{
+  "surface": "clay",
+  "badge": "Análise",
+  "credit": "Reuters / Yves Herman",
+  "slides": [
+    {
+      "kind": "cover",
+      "kicker": "Roland Garros 2026 · Final",
+      "title": "Como Alcaraz desmontou o jogo do Sinner em Paris",
+      "subtitle": "Três decisões táticas que viraram a final mais aguardada do ano.",
+      "image": "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=1600&q=80"
+    },
+    {
+      "kind": "text",
+      "kicker": "Contexto",
+      "title": "Sinner chegou favorito.",
+      "body": "Cinco vitórias seguidas em finais de Slam, número 1 do mundo, e um head-to-head 5-2 contra o espanhol no saibro. Tudo apontava para mais um título italiano."
+    },
+    {
+      "kind": "stat",
+      "value": "78%",
+      "caption": "Pontos no 1º serviço",
+      "body": "Alcaraz teve seu melhor índice de saque do ano. Forçou Sinner a devolver de longe e tirou o italiano do baseline confortável."
+    },
+    {
+      "kind": "image",
+      "image": "https://images.unsplash.com/photo-1531315630201-bb15abeb1653?w=1600&q=80",
+      "caption": "O drop shot no quinto game do 2º set marcou a virada psicológica da partida."
+    },
+    {
+      "kind": "quote",
+      "quote": "Ele jogou um tênis que eu não esperava no saibro. Senti que estava sempre um passo atrás.",
+      "attribution": "Jannik Sinner, coletiva pós-jogo"
+    },
+    {
+      "kind": "outro",
+      "headline": "Mais análises todo dia.",
+      "cta": "Siga @cafecomteniss"
+    }
+  ]
+}
+</script>
+
+<style>
+  :root { --bg:#1a1a1c; }
+  html, body { margin:0; padding:0; background: var(--bg); font-family: Geist, system-ui, sans-serif; }
+  body { padding: 40px; min-height: 100vh; }
+
+  /* Galeria — slides empilhados, cada um capturável individualmente */
+  .gallery {
+    display: flex; flex-direction: column; align-items: center; gap: 60px;
+    transform-origin: top center;
+  }
+  /* Escala para caber a largura do viewport. Cada slide mantém 1080×1350 reais
+     para o puppeteer capturar com viewport 1080×1350. */
+  @media (max-width: 1180px) {
+    .gallery { transform: scale(calc((100vw - 80px) / 1080));
+               width: 1080px; }
+  }
+
+  .slide {
+    width: 1080px; height: 1350px; flex: 0 0 auto;
+    position: relative; overflow: hidden;
+    background: #000; color: #fff;
+    box-shadow: 0 24px 80px rgba(0,0,0,.5);
+  }
+  .slide-label {
+    position: absolute; top: -34px; left: 0;
+    font-family: "Geist Mono", monospace; color: rgba(255,255,255,.45);
+    font-size: 13px; letter-spacing: .14em; text-transform: uppercase;
+  }
+
+  /* ===== Elementos comuns ===== */
+  .photo { position:absolute; inset:0; width:100%; height:100%;
+           object-fit:cover; object-position:center; }
+  .gradient-bottom {
+    position:absolute; inset:0; pointer-events:none;
+    background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 22%,
+                                         rgba(0,0,0,0) 45%, rgba(0,0,0,.9) 100%);
+  }
+  .topbar {
+    position:absolute; top:48px; left:48px; right:48px; z-index:2;
+    display:flex; justify-content:space-between; align-items:flex-start;
+  }
+  .badge {
+    background: var(--surface-chip); color: var(--surface-chipInk);
+    padding: 12px 20px 11px; border-radius: 4px;
+    font-family: "Geist Mono", monospace;
+    font-size: 18px; letter-spacing: .14em; text-transform: uppercase;
+    font-weight: 600;
+    display:inline-flex; align-items:center; gap:12px;
+  }
+  .badge::before { content:""; width:7px; height:7px; border-radius:50%;
+                   background: var(--surface-chipInk); opacity:.9; }
+  .wordmark {
+    display:inline-flex; align-items:center; gap:10px; color:#fff;
+    font-family:"Instrument Serif",serif; font-size:22px; font-style:italic; line-height:1;
+  }
+  .wordmark.dark { color:#1A1A1C; }
+  .wordmark svg { width:26px; height:26px; }
+  .footer-strip {
+    position:absolute; bottom:14px; left:48px; right:48px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:"Geist Mono",monospace; font-size:14px;
+    letter-spacing:.08em; text-transform:uppercase;
+    color: rgba(255,255,255,.55); pointer-events:none;
+  }
+  .footer-strip.dark { color: rgba(0,0,0,.55); }
+  .swipe {
+    display:inline-flex; align-items:center; gap:10px;
+    color: var(--surface-accent);
+    font-family: "Geist Mono", monospace; font-size: 16px;
+    letter-spacing: .18em; text-transform: uppercase; font-weight: 600;
+  }
+  .swipe-arrow { font-size: 22px; line-height: 1; }
+  .page-num {
+    position:absolute; top:48px; left:48px; z-index:2;
+    font-family:"Geist Mono",monospace; font-size:14px;
+    letter-spacing:.14em; text-transform:uppercase;
+    color: var(--surface-accent); font-weight:600;
+  }
+  .page-num.dark { color: var(--surface-primary); }
+
+  /* ===== COVER ===== */
+  .cover { background:#000; }
+  .cover .content {
+    position:absolute; left:48px; right:48px; bottom:48px; z-index:2;
+    display:flex; gap:24px; align-items:flex-end;
+  }
+  .cover .stripe {
+    width:5px; align-self:stretch; background: var(--surface-accent);
+    border-radius:2px; margin-bottom:4px; min-height:260px;
+  }
+  .cover .kicker {
+    font-family:"Geist Mono",monospace; color: var(--surface-accent);
+    font-size:18px; letter-spacing:.18em; text-transform:uppercase;
+    font-weight:500; margin-bottom:18px;
+  }
+  .cover .title {
+    font-family:"Instrument Serif",serif; color:#fff;
+    font-size:84px; line-height:1.0; margin:0; font-weight:400;
+    letter-spacing:-.02em; text-wrap:balance;
+  }
+  .cover .subtitle {
+    color: rgba(255,255,255,.85); font-size:26px; line-height:1.35;
+    margin:22px 0 24px; max-width:880px; text-wrap:pretty;
+  }
+
+  /* ===== TEXT (creme) ===== */
+  .text-slide { background:#F4F1EA; color:#1A1A1C; }
+  .text-slide .content {
+    position:absolute; left:64px; right:64px; top:160px; bottom:120px;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  .text-slide .stripe-h {
+    width:80px; height:6px; background: var(--surface-accent);
+    margin-bottom:36px;
+  }
+  .text-slide .kicker {
+    font-family:"Geist Mono",monospace; color: var(--surface-primary);
+    font-size:18px; letter-spacing:.2em; text-transform:uppercase;
+    font-weight:600; margin-bottom:24px;
+  }
+  .text-slide .title {
+    font-family:"Instrument Serif",serif; color:#1A1A1C;
+    font-size:96px; line-height:.98; margin:0 0 36px;
+    font-weight:400; letter-spacing:-.02em; text-wrap:balance;
+  }
+  .text-slide .body {
+    color:#3A3A3C; font-size:28px; line-height:1.42;
+    margin:0; max-width:880px; text-wrap:pretty;
+  }
+
+  /* ===== STAT ===== */
+  .stat-slide { background:#0F0F10; color:#fff; }
+  .stat-slide::before {
+    content:""; position:absolute; inset:0;
+    background:
+      radial-gradient(circle at 80% 20%, color-mix(in srgb, var(--surface-primary) 40%, transparent) 0%, transparent 60%),
+      radial-gradient(circle at 20% 90%, color-mix(in srgb, var(--surface-accent) 22%, transparent) 0%, transparent 55%);
+  }
+  .stat-slide .content {
+    position:absolute; left:64px; right:64px; top:160px; bottom:120px;
+    display:flex; flex-direction:column; justify-content:center; z-index:2;
+  }
+  .stat-slide .caption {
+    font-family:"Geist Mono",monospace; color: var(--surface-accent);
+    font-size:22px; letter-spacing:.22em; text-transform:uppercase;
+    font-weight:600; margin-bottom:20px;
+  }
+  .stat-slide .value {
+    font-family:"Instrument Serif",serif; color:#fff;
+    font-size:340px; line-height:.85; margin:0 0 24px;
+    font-weight:400; letter-spacing:-.04em;
+  }
+  .stat-slide .body {
+    color:rgba(255,255,255,.82); font-size:28px; line-height:1.4;
+    margin:0; max-width:880px; text-wrap:pretty;
+  }
+
+  /* ===== IMAGE ===== */
+  .image-slide { background:#000; }
+  .image-slide .gradient-img {
+    position:absolute; inset:0;
+    background: linear-gradient(180deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 25%,
+                                         rgba(0,0,0,0) 55%, rgba(0,0,0,.92) 100%);
+  }
+  .image-slide .caption-box {
+    position:absolute; left:48px; right:48px; bottom:80px; z-index:2;
+    display:flex; gap:24px; align-items:flex-end;
+  }
+  .image-slide .caption-box .stripe {
+    width:5px; align-self:stretch; background: var(--surface-accent);
+    border-radius:2px; min-height:90px;
+  }
+  .image-slide .caption-box .caption {
+    color:#fff; font-family:"Instrument Serif",serif;
+    font-size:38px; line-height:1.25; margin:0; max-width:920px;
+    font-weight:400; letter-spacing:-.01em; text-wrap:balance;
+  }
+
+  /* ===== QUOTE ===== */
+  .quote-slide { background:#F4F1EA; color:#1A1A1C; }
+  .quote-slide .mark {
+    position:absolute; top:88px; left:64px;
+    font-family:"Instrument Serif",serif; font-style:italic;
+    font-size:200px; line-height:.7; color: var(--surface-accent);
+    user-select:none;
+  }
+  .quote-slide .content {
+    position:absolute; left:64px; right:64px; top:280px; bottom:130px;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  .quote-slide .quote {
+    font-family:"Instrument Serif",serif; font-style:italic;
+    color:#1A1A1C; font-size:62px; line-height:1.15; margin:0 0 40px;
+    font-weight:400; letter-spacing:-.015em; text-wrap:balance;
+  }
+  .quote-slide .attribution {
+    font-family:"Geist Mono",monospace; color: var(--surface-primary);
+    font-size:18px; letter-spacing:.18em; text-transform:uppercase;
+    font-weight:600;
+    display:flex; align-items:center; gap:14px;
+  }
+  .quote-slide .attribution::before {
+    content:""; width:32px; height:2px; background: var(--surface-primary);
+  }
+
+  /* ===== OUTRO ===== */
+  .outro-slide { background:#0F0F10; color:#fff; }
+  .outro-slide::before {
+    content:""; position:absolute; inset:0;
+    background:
+      radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--surface-primary) 35%, transparent) 0%, transparent 60%);
+  }
+  .outro-slide .center {
+    position:absolute; inset:0; z-index:2;
+    display:flex; flex-direction:column; justify-content:center; align-items:center;
+    text-align:center; padding: 0 64px;
+  }
+  .outro-slide .big-mark {
+    margin-bottom: 48px;
+    width: 120px; height: 120px;
+  }
+  .outro-slide .headline {
+    font-family:"Instrument Serif",serif; color:#fff;
+    font-size:78px; line-height:1.05; margin:0 0 56px;
+    font-weight:400; letter-spacing:-.02em; max-width:840px; text-wrap:balance;
+  }
+  .outro-slide .cta {
+    display:inline-flex; align-items:center; gap:14px;
+    background: var(--surface-accent); color:#000;
+    padding: 22px 36px 20px; border-radius: 6px;
+    font-family:"Geist Mono",monospace; font-size:24px;
+    letter-spacing:.16em; text-transform:uppercase; font-weight:700;
+  }
+</style>
+</head>
+<body>
+  <div class="gallery" id="gallery"></div>
+
+  <script>
+    const SURFACES = {
+      hard:    { primary:'#1E40AF', accent:'#3B82F6', chip:'#1E40AF', chipInk:'#F5F8FF' },
+      grass:   { primary:'#1F6F3C', accent:'#3DA15A', chip:'#1F6F3C', chipInk:'#F2F8EE' },
+      clay:    { primary:'#B4441C', accent:'#E76A2A', chip:'#B4441C', chipInk:'#FFF4EC' },
+      neutral: { primary:'#1A1A1C', accent:'#D4B96A', chip:'#1A1A1C', chipInk:'#F4F1EA' },
+    };
+
+    const wordmark = (color = '#fff') => `
+      <span class="wordmark${color === '#1A1A1C' ? ' dark' : ''}">
+        <svg viewBox="0 0 28 28" aria-hidden="true">
+          <circle cx="14" cy="14" r="12" fill="none" stroke="${color}" stroke-width="1.6"></circle>
+          <path d="M3 9 Q14 14 25 9" fill="none" stroke="${color}" stroke-width="1.6"></path>
+          <path d="M3 19 Q14 14 25 19" fill="none" stroke="${color}" stroke-width="1.6"></path>
+        </svg>
+        <span>café com tênis</span>
+      </span>`;
+
+    const bigBall = (color) => `
+      <svg viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx="60" cy="60" r="56" fill="none" stroke="${color}" stroke-width="3"></circle>
+        <path d="M6 36 Q60 60 114 36" fill="none" stroke="${color}" stroke-width="3"></path>
+        <path d="M6 84 Q60 60 114 84" fill="none" stroke="${color}" stroke-width="3"></path>
+      </svg>`;
+
+    function pageLabel(i, total) {
+      return String(i + 1).padStart(2, '0') + ' / ' + String(total).padStart(2, '0');
+    }
+
+    function renderSlide(slide, ctx) {
+      const { surface, badge, credit, index, total } = ctx;
+      const s = SURFACES[surface] || SURFACES.neutral;
+      const label = pageLabel(index, total);
+      const num = `<div class="page-num">${label}</div>`;
+      const numDark = `<div class="page-num dark">${label}</div>`;
+
+      switch (slide.kind) {
+        case 'cover': return `
+          <img class="photo" src="${slide.image}" alt="" />
+          <div class="gradient-bottom"></div>
+          <div class="topbar">
+            <div class="badge">${badge}</div>
+            ${wordmark('#fff')}
+          </div>
+          <div class="content">
+            <div class="stripe"></div>
+            <div style="flex:1; min-width:0;">
+              ${slide.kicker ? `<div class="kicker">${slide.kicker}</div>` : ''}
+              <h1 class="title">${slide.title}</h1>
+              ${slide.subtitle ? `<p class="subtitle">${slide.subtitle}</p>` : ''}
+              <div class="swipe">arraste <span class="swipe-arrow">→</span></div>
+            </div>
+          </div>
+          <div class="footer-strip">
+            <span>${credit || ''}</span>
+            <span>@cafecomteniss</span>
+          </div>`;
+
+        case 'text': return `
+          ${numDark}
+          <div class="topbar">
+            <div></div>
+            ${wordmark('#1A1A1C')}
+          </div>
+          <div class="content">
+            <div class="stripe-h"></div>
+            ${slide.kicker ? `<div class="kicker">${slide.kicker}</div>` : ''}
+            <h1 class="title">${slide.title}</h1>
+            ${slide.body ? `<p class="body">${slide.body}</p>` : ''}
+          </div>
+          <div class="footer-strip dark">
+            <span></span>
+            <span>@cafecomteniss</span>
+          </div>`;
+
+        case 'stat': return `
+          ${num}
+          <div class="topbar">
+            <div></div>
+            ${wordmark('#fff')}
+          </div>
+          <div class="content">
+            ${slide.caption ? `<div class="caption">${slide.caption}</div>` : ''}
+            <div class="value">${slide.value}</div>
+            ${slide.body ? `<p class="body">${slide.body}</p>` : ''}
+          </div>
+          <div class="footer-strip">
+            <span></span>
+            <span>@cafecomteniss</span>
+          </div>`;
+
+        case 'image': return `
+          <img class="photo" src="${slide.image}" alt="" />
+          <div class="gradient-img"></div>
+          ${num}
+          <div class="topbar">
+            <div></div>
+            ${wordmark('#fff')}
+          </div>
+          <div class="caption-box">
+            <div class="stripe"></div>
+            <p class="caption">${slide.caption || ''}</p>
+          </div>
+          <div class="footer-strip">
+            <span>${credit || ''}</span>
+            <span>@cafecomteniss</span>
+          </div>`;
+
+        case 'quote': return `
+          ${numDark}
+          <div class="mark">“</div>
+          <div class="topbar">
+            <div></div>
+            ${wordmark('#1A1A1C')}
+          </div>
+          <div class="content">
+            <p class="quote">${slide.quote}</p>
+            ${slide.attribution ? `<div class="attribution">${slide.attribution}</div>` : ''}
+          </div>
+          <div class="footer-strip dark">
+            <span></span>
+            <span>@cafecomteniss</span>
+          </div>`;
+
+        case 'outro': return `
+          <div class="center">
+            <div class="big-mark">${bigBall(s.accent)}</div>
+            <h1 class="headline">${slide.headline || 'Mais análises todo dia.'}</h1>
+            <div class="cta">${slide.cta || 'Siga @cafecomteniss'}</div>
+          </div>`;
+
+        default: return `<div style="padding:48px; color:#fff;">slide kind "${slide.kind}" desconhecido</div>`;
+      }
+    }
+
+    function render() {
+      const data = JSON.parse(document.getElementById('carousel-data').textContent);
+      const s = SURFACES[data.surface] || SURFACES.neutral;
+      const r = document.documentElement.style;
+      r.setProperty('--surface-primary', s.primary);
+      r.setProperty('--surface-accent',  s.accent);
+      r.setProperty('--surface-chip',    s.chip);
+      r.setProperty('--surface-chipInk', s.chipInk);
+
+      const gallery = document.getElementById('gallery');
+      const total = data.slides.length;
+      data.slides.forEach((slide, index) => {
+        const el = document.createElement('div');
+        el.className = `slide ${slide.kind}-slide` + (slide.kind === 'cover' ? ' cover' : '');
+        el.setAttribute('data-slide-index', index);
+        el.setAttribute('data-slide-kind', slide.kind);
+        el.innerHTML = `<div class="slide-label">slide ${index + 1} · ${slide.kind}</div>`
+                     + renderSlide(slide, { surface: data.surface, badge: data.badge, credit: data.credit, index, total });
+        gallery.appendChild(el);
+      });
+    }
+    render();
+  </script>
+</body>
+</html>

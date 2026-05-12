@@ -7,9 +7,27 @@
       "type": "action",
       "source": "wikimedia",
       "license": "CC BY-SA 4.0",
-      "author": "Kelvin Clay Fonseca",
-      "url_original": "https://upload.wikimedia.org/wikipedia/commons/5/51/Kelvin_Clay_Fonseca.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
-      "downloaded_at": "2026-05-07"
+      "author": "Hameltion",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Jo%C3%A3o_Fonseca_%282024_Cary%29_01.jpg/960px-Jo%C3%A3o_Fonseca_%282024_Cary%29_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "downloaded_at": "2026-05-12"
+    },
+    {
+      "file": "headshot_01.jpg",
+      "type": "headshot",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Jo%C3%A3o_Fonseca_%282024_Cary%29_09_%28cropped%29.jpg/960px-Jo%C3%A3o_Fonseca_%282024_Cary%29_09_%28cropped%29.jpg",
+      "downloaded_at": "2026-05-12"
+    },
+    {
+      "file": "headshot_02.jpg",
+      "type": "headshot",
+      "source": "wikipedia",
+      "license": "CC (Wikipedia)",
+      "author": "Wikipedia",
+      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Jo%C3%A3o_Fonseca_%282024_Cary%29_09_%28cropped%29.jpg/960px-Jo%C3%A3o_Fonseca_%282024_Cary%29_09_%28cropped%29.jpg",
+      "downloaded_at": "2026-05-12"
     }
   ]
 }

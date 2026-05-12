@@ -1,0 +1,81 @@
+{
+  "post_examples": {
+    "resultado_hard": {
+      "surface": "hard",
+      "badge": "Resultado",
+      "kicker": "US Open · 1ª Rodada",
+      "title": "João Fonseca avança em sets diretos",
+      "subtitle": "O brasileiro de 19 anos venceu o argentino Báez por 6-3, 6-4, 7-5 e enfrenta um cabeça-de-chave na próxima rodada.",
+      "image": "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=1600&q=80",
+      "credit": "AP / Manu Fernandez"
+    },
+    "analise_grass": {
+      "surface": "grass",
+      "badge": "Análise",
+      "kicker": "Wimbledon · Semifinal",
+      "title": "Por que a grama de Wimbledon mudou em 2026",
+      "subtitle": "A nova grama All Court ficou mais lenta — e isso explica por que defensores como Sinner estão dominando o saibro inglês.",
+      "image": "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1600&q=80",
+      "credit": "Getty Images"
+    },
+    "insight_clay": {
+      "surface": "clay",
+      "badge": "Insight",
+      "kicker": "Roland Garros · Estatística",
+      "title": "Alcaraz tem o melhor saque do circuito no saibro",
+      "subtitle": "78% de pontos no 1º serviço em Paris — número que ninguém alcança desde Nadal em 2017.",
+      "image": "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=1600&q=80",
+      "credit": "Reuters / Yves Herman"
+    },
+    "ranking_neutral": {
+      "surface": "neutral",
+      "badge": "Ranking",
+      "kicker": "WTA · Atualização semanal",
+      "title": "Bia Haddad volta ao top 15 do ranking",
+      "subtitle": "Brasileira ganha sete posições após boa semana em Madrid e se aproxima da melhor marca da carreira.",
+      "image": "https://images.unsplash.com/photo-1531315630201-bb15abeb1653?w=1600&q=80",
+      "credit": "WTA Tour"
+    }
+  },
+  "carousel_example": {
+    "surface": "clay",
+    "badge": "Análise",
+    "credit": "Reuters / Yves Herman",
+    "slides": [
+      {
+        "kind": "cover",
+        "kicker": "Roland Garros 2026 · Final",
+        "title": "Como Alcaraz desmontou o jogo do Sinner em Paris",
+        "subtitle": "Três decisões táticas que viraram a final mais aguardada do ano.",
+        "image": "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=1600&q=80"
+      },
+      {
+        "kind": "text",
+        "kicker": "Contexto",
+        "title": "Sinner chegou favorito.",
+        "body": "Cinco vitórias seguidas em finais de Slam, número 1 do mundo, e um head-to-head 5-2 contra o espanhol no saibro. Tudo apontava para mais um título italiano."
+      },
+      {
+        "kind": "stat",
+        "value": "78%",
+        "caption": "Pontos no 1º serviço",
+        "body": "Alcaraz teve seu melhor índice de saque do ano. Forçou Sinner a devolver de longe e tirou o italiano do baseline confortável."
+      },
+      {
+        "kind": "image",
+        "image": "https://images.unsplash.com/photo-1531315630201-bb15abeb1653?w=1600&q=80",
+        "caption": "O drop shot no quinto game do 2º set marcou a virada psicológica da partida."
+      },
+      {
+        "kind": "quote",
+        "quote": "Ele jogou um tênis que eu não esperava no saibro. Senti que estava sempre um passo atrás.",
+        "attribution": "Jannik Sinner, coletiva pós-jogo"
+      },
+      {
+        "kind": "outro",
+        "headline": "Mais análises todo dia.",
+        "cta": "Siga @cafecomteniss"
+      }
+    ]
+  }
+}
