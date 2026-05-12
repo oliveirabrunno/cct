@@ -11,7 +11,7 @@ log = get_logger(__name__)
 DATA_DIR = Path("data/players")
 
 _RESTORE_HEADERS = {
-    "User-Agent": "CafeComTenis/1.0 (https://instagram.com/cafecomteniss; cafecomtenis@gmail.com)"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
 
 
@@ -153,7 +153,7 @@ class LocalImageCache:
             raise ValueError("photo_info sem URL")
 
         headers = {
-            "User-Agent": "CafeComTenis/1.0 (https://instagram.com/cafecomteniss; cafecomtenis@gmail.com)"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
         import asyncio
         await asyncio.sleep(0.8)  # respeitar rate limit do Wikimedia
