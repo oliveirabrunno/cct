@@ -66,8 +66,8 @@ jobs:
           path: |
             data/database.sqlite
             data/players
-          key: data-cache-${{ github.run_id }}
-          restore-keys: data-cache-
+          key: data-cache-v2-${{ github.run_id }}
+          restore-keys: data-cache-v2-
 
       - name: Checar scores ao vivo
         env:

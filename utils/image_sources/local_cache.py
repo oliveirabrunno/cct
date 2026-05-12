@@ -160,6 +160,9 @@ class LocalImageCache:
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
                 resp.raise_for_status()
+                content_type = resp.headers.get("Content-Type", "")
+                if not content_type.startswith("image/"):
+                    raise ValueError(f"URL retornou {content_type} em vez de imagem (provável bloqueio de WAF/Cloudflare)")
                 content = await resp.read()
 
         async with aiofiles.open(file_path, "wb") as f:
