@@ -243,7 +243,7 @@ async def run_afternoon_insight():
         "kicker": "ATP IQ · Estatística Avançada",
         "title": stat_data['headline'],
         "subtitle": stat_data['subtext'],
-        "image": f"file://{os.path.abspath(stat_data['chart_path'])}" if stat_data.get("chart_path") else "",
+        "image": Path(stat_data['chart_path']).resolve().as_uri() if stat_data.get("chart_path") else "",
         "credit": "Data: ATP Tennis IQ / PIF"
     }
     

@@ -86,7 +86,7 @@ async def generate_carousel(
             if player_query:
                 img_data = await img_manager.get_player_image(player_query, image_type="any")
                 if img_data and img_data.get("path"):
-                    slide["image"] = f"file://{os.path.abspath(img_data['path'])}"
+                    slide["image"] = Path(img_data['path']).resolve().as_uri()
                 else:
                     slide["image"] = ""
             else:
@@ -159,7 +159,7 @@ async def generate_post(
             tournament_name=data.get("tournament", "")
         )
         if img_data and img_data.get("path"):
-            post_data["image"] = f"file://{os.path.abspath(img_data['path'])}"
+            post_data["image"] = Path(img_data['path']).resolve().as_uri()
             post_data["credit"] = img_data.get("credit_text", "")
         else:
             log.warning(f"Sem foto para {player_query}, card pode ficar vazio.")

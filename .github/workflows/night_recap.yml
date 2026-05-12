@@ -78,6 +78,7 @@ jobs:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
           FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
           META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}

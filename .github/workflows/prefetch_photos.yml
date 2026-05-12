@@ -61,6 +61,7 @@ jobs:
       - name: Prefetch fotos top 100 ATP + WTA
         env:
           FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           TOP_N="${{ github.event.inputs.top_n || '100' }}"
