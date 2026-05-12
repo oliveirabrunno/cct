@@ -3,11 +3,22 @@ import os
 import subprocess
 import time
 import re
+import base64
 from pathlib import Path
 from utils.image_manager import ImageManager
 from utils.logger import get_logger
 
 log = get_logger(__name__)
+
+def _image_to_base64(filepath: str) -> str:
+    path = Path(filepath)
+    if not path.exists():
+        return ""
+    ext = path.suffix.lower().strip('.')
+    mime = "image/png" if ext == "png" else ("image/webp" if ext == "webp" else "image/jpeg")
+    with open(path, "rb") as f:
+        b64_str = base64.b64encode(f.read()).decode("utf-8")
+    return f"data:{mime};base64,{b64_str}"
 
 SCREENSHOT_JS = Path(__file__).parent / "screenshot.js"
 TEMPLATE_HTML = Path("config/templates/carousel.html")
@@ -86,7 +97,7 @@ async def generate_carousel(
             if player_query:
                 img_data = await img_manager.get_player_image(player_query, image_type="any")
                 if img_data and img_data.get("path"):
-                    slide["image"] = Path(img_data['path']).resolve().as_uri()
+                    slide["image"] = _image_to_base64(img_data['path'])
                 else:
                     slide["image"] = ""
             else:
@@ -159,7 +170,7 @@ async def generate_post(
             tournament_name=data.get("tournament", "")
         )
         if img_data and img_data.get("path"):
-            post_data["image"] = Path(img_data['path']).resolve().as_uri()
+            post_data["image"] = _image_to_base64(img_data['path'])
             post_data["credit"] = img_data.get("credit_text", "")
         else:
             log.warning(f"Sem foto para {player_query}, card pode ficar vazio.")

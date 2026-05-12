@@ -46,8 +46,20 @@ from generators.reel import generate_reel_from_carousel, generate_quick_reel
 from publisher.local_publisher import LocalPublisher
 from utils.dedup import is_duplicate, register_post
 from utils.logger import get_logger
+from utils.image_manager import ImageManager
 
 log = get_logger("orchestrator")
+
+
+def _image_to_base64(filepath: str) -> str:
+    path = Path(filepath)
+    if not path.exists():
+        return ""
+    ext = path.suffix.lower().strip('.')
+    mime = "image/png" if ext == "png" else ("image/webp" if ext == "webp" else "image/jpeg")
+    with open(path, "rb") as f:
+        b64_str = base64.b64encode(f.read()).decode("utf-8")
+    return f"data:{mime};base64,{b64_str}"
 
 
 def _make_publisher():
@@ -243,7 +255,7 @@ async def run_afternoon_insight():
         "kicker": "ATP IQ · Estatística Avançada",
         "title": stat_data['headline'],
         "subtitle": stat_data['subtext'],
-        "image": Path(stat_data['chart_path']).resolve().as_uri() if stat_data.get("chart_path") else "",
+        "image": _image_to_base64(stat_data['chart_path']) if stat_data.get("chart_path") else "",
         "credit": "Data: ATP Tennis IQ / PIF"
     }
     
