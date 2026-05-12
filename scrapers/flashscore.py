@@ -65,6 +65,45 @@ async def fetch_live_scores() -> list[dict]:
         return []
 
 
+def _resolve_full_name(abbreviated: str) -> str:
+    """
+    Converte nome abreviado do Flashscore (ex: 'Darderi L.') para nome completo 
+    (ex: 'Luciano Darderi') usando os dados de ranking ao vivo.
+    Se não encontrar, tenta inverter 'Sobrenome I.' → 'I. Sobrenome' como fallback.
+    """
+    if not abbreviated or len(abbreviated) < 3:
+        return abbreviated
+
+    try:
+        from scrapers.live_ranking import fetch_atp_live_rankings, fetch_wta_live_rankings
+        
+        # Extrair sobrenome e inicial do formato "Sobrenome I."
+        parts = abbreviated.strip().split()
+        if len(parts) < 2:
+            return abbreviated
+        
+        surname = parts[0].rstrip(",").lower()
+        
+        for fetch_fn in [fetch_atp_live_rankings, fetch_wta_live_rankings]:
+            try:
+                players = fetch_fn(200)
+                for p in players:
+                    full_name = p.get("name", "")
+                    if surname in full_name.lower():
+                        return full_name
+            except Exception:
+                continue
+    except Exception:
+        pass
+    
+    # Fallback: inverter "Sobrenome I." → "I. Sobrenome" (melhor que nada)
+    parts = abbreviated.strip().split()
+    if len(parts) >= 2:
+        return f"{' '.join(parts[1:])} {parts[0]}".replace(".", "").strip()
+    
+    return abbreviated
+
+
 async def check_completed_matches() -> list[dict]:
     """Retorna apenas partidas finalizadas envolvendo atletas monitorados."""
     all_matches = await fetch_live_scores()
@@ -89,13 +128,22 @@ async def check_completed_matches() -> list[dict]:
         # Determinar vencedor pelo score
         score_a = m.get("score_a", "")
         score_b = m.get("score_b", "")
+        
+        # Resolver nomes abreviados para nomes completos
+        winner_raw = m["player_a"] if score_a > score_b else m["player_b"]
+        loser_raw  = m["player_b"] if score_a > score_b else m["player_a"]
+        
+        winner_full = _resolve_full_name(winner_raw)
+        loser_full  = _resolve_full_name(loser_raw)
+        
+        log.info(f"Nomes resolvidos: {winner_raw} → {winner_full} | {loser_raw} → {loser_full}")
 
         completed.append({
             "player_a": m["player_a"],
             "player_b": m["player_b"],
             "score": f"{score_a}-{score_b}",
-            "winner": m["player_a"] if score_a > score_b else m["player_b"],
-            "loser":  m["player_b"] if score_a > score_b else m["player_a"],
+            "winner": winner_full,
+            "loser":  loser_full,
             "tournament": m.get("tournament", ""),
             "timestamp": datetime.now().isoformat(),
         })

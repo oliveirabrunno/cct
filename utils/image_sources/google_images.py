@@ -108,6 +108,7 @@ def search_player_images(player_name: str, count: int = 4, year: int = None, tou
     if tournament_name:
         query = f"{player_name} tennis {tournament_name} {target_year}"
     else:
+        season = _get_season()
         query = SEASON_QUERIES.get(season, SEASON_QUERIES["hard"])[0].format(
             player=player_name, year=target_year
         )
