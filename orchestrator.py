@@ -148,31 +148,41 @@ async def run_live_monitor():
     log.info("=== Monitor ao vivo ===")
     from scrapers.flashscore import check_completed_matches
     from generators.match_result_card import process_and_publish_match
+    from utils.publish_lock import acquire as lock_acquire, release as lock_release
 
     completed = await check_completed_matches()
     if not completed:
         log.info("Nenhuma partida relevante finalizada")
         return
 
+    # ── Anti-duplicação: lock de publicação ──────────────────────────────────
+    if not lock_acquire():
+        log.warning("Outro run já está publicando — abortando para evitar duplicação.")
+        return
+
     publisher = _make_publisher()
     story_gen = StoryGenerator()
 
-    for match in completed:
-        winner = match.get("winner", "")
-        loser  = match.get("loser", "")
-        score  = match.get("score", "")
-        log.info(f"Resultado: {winner} def. {loser} {score}")
+    try:
+        for match in completed:
+            winner = match.get("winner", "")
+            loser  = match.get("loser", "")
+            score  = match.get("score", "")
+            log.info(f"Resultado: {winner} def. {loser} {score}")
 
-        # Card de resultado principal (imagem única, estilo ATP Tour)
-        await process_and_publish_match(match, publisher)
+            # Card de resultado principal (imagem única, estilo ATP Tour)
+            await process_and_publish_match(match, publisher)
 
-        # Story de breaking news complementar (dedup por partida)
-        story_key = f"breaking_{winner}_{loser}".lower().replace(" ", "_")
-        if not is_duplicate("story_breaking", story_key, hours=12):
-            story_path = await story_gen.generate_breaking_story(match)
-            if story_path:
-                await publisher.publish_story(story_path)
-                register_post("story_breaking", story_key)
+            # Story de breaking news complementar (dedup por partida)
+            story_key = f"breaking_{winner}_{loser}".lower().replace(" ", "_")
+            if not is_duplicate("story_breaking", story_key, hours=12):
+                story_path = await story_gen.generate_breaking_story(match)
+                if story_path:
+                    await publisher.publish_story(story_path)
+                    register_post("story_breaking", story_key)
+    finally:
+        lock_release()
+
 
 
 async def run_trend_check():

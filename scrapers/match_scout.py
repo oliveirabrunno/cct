@@ -9,7 +9,7 @@ O Flashscore serve para descobrir QUEM jogou; o Sackmann entrega as STATS.
 """
 
 import asyncio
-from datetime import date
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from utils.logger import get_logger
 
@@ -92,10 +92,11 @@ async def find_recent_finished_matches(monitored_players: list[str] = None) -> l
 
 # ─── Stats da última partida via Sackmann ─────────────────────────────────────
 
-def get_last_match_stats(player_name: str, surface: str = None, year: int = None) -> dict:
+def get_last_match_stats(player_name: str, surface: str = None, year: int = None, max_days: int = 3) -> dict:
     """
     Busca as stats da ÚLTIMA partida do jogador nos CSVs do Sackmann.
-    Retorna stats de saque e resultado da partida.
+    Retorna {} se a partida mais recente for mais antiga que `max_days` dias.
+    Isso garante que o scout seja sempre sobre um jogo RECENTE.
     """
     try:
         import pandas as pd
@@ -129,6 +130,21 @@ def get_last_match_stats(player_name: str, surface: str = None, year: int = None
         # Pegar a partida mais recente
         last = all_matches.sort_values("tourney_date", ascending=False).iloc[0]
         side = last["_side"]
+
+        # ── Freshness guard ──────────────────────────────────────────────────
+        tourney_date_str = str(last.get("tourney_date", ""))
+        if len(tourney_date_str) == 8:
+            try:
+                match_date = datetime.strptime(tourney_date_str, "%Y%m%d").date()
+                age_days = (date.today() - match_date).days
+                if age_days > max_days:
+                    log.info(
+                        f"Scout de {player_name.split()[-1]}: partida mais recente tem {age_days} dias "
+                        f"(limite={max_days}) — ignorando para usar surface record."
+                    )
+                    return {}
+            except ValueError:
+                pass  # data inválida, ignora o guard
 
         def pct(num, den):
             try:
@@ -188,12 +204,79 @@ def get_last_match_stats(player_name: str, surface: str = None, year: int = None
             "duration_min": int(last.get("minutes", 0)) if str(last.get("minutes", "nan")) != "nan" else None,
             "stats":        stats,
             "insight":      insight,
-            "tourney_date": str(last.get("tourney_date", "")),
+            "tourney_date": tourney_date_str,
+            "age_days":     age_days if 'age_days' in dir() else 0,
         }
 
     except Exception as e:
         log.error(f"get_last_match_stats falhou para {player_name}: {e}")
         return {}
+
+
+def get_same_tournament_h2h(player_a: str, player_b: str, tournament_name: str,
+                             lookback_years: int = 5) -> dict | None:
+    """
+    Busca o último confronto entre player_a e player_b NO MESMO torneio
+    nos últimos `lookback_years` anos. Útil para card pré-jogo contextual:
+    "Última vez em Roland Garros: Sinner venceu 6-4 7-5 7-6(3) na SF"
+
+    Retorna None se não houver confronto no histórico.
+    """
+    try:
+        import pandas as pd
+        from scrapers.stats_scraper import _load_sackmann_years, _find_player_in_df
+
+        start_year = CURRENT_YEAR - lookback_years
+        df = _load_sackmann_years(start_year=start_year, end_year=CURRENT_YEAR - 1)
+        if df is None or df.empty:
+            return None
+
+        # Normalizar nome do torneio para busca parcial
+        tourn_lower = tournament_name.lower().replace(" ", "")
+        tourn_mask  = df["tourney_name"].str.lower().str.replace(" ", "").str.contains(
+            tourn_lower[:8], na=False   # usar os primeiros 8 chars (ex: "rolandga")
+        )
+        df_tourn = df[tourn_mask]
+        if df_tourn.empty:
+            log.debug(f"Nenhum jogo de '{tournament_name}' encontrado no Sackmann")
+            return None
+
+        mask_a_win = _find_player_in_df(df_tourn, player_a, "winner_name") & \
+                     _find_player_in_df(df_tourn, player_b, "loser_name")
+        mask_b_win = _find_player_in_df(df_tourn, player_b, "winner_name") & \
+                     _find_player_in_df(df_tourn, player_a, "loser_name")
+        matches    = df_tourn[mask_a_win | mask_b_win]
+
+        if matches.empty:
+            return None
+
+        last = matches.sort_values("tourney_date", ascending=False).iloc[0]
+        winner_is_a = _find_player_in_df(matches.head(1), player_a, "winner_name").any()
+
+        a_short = player_a.split()[-1]
+        b_short = player_b.split()[-1]
+        year    = str(last.get("tourney_date", ""))[:4]
+        score   = str(last.get("score", ""))
+        round_  = str(last.get("round", ""))
+        winner  = player_a if winner_is_a else player_b
+
+        return {
+            "winner":      winner,
+            "loser":       player_b if winner_is_a else player_a,
+            "score":       score,
+            "round":       round_,
+            "year":        year,
+            "tournament":  str(last.get("tourney_name", "")),
+            "context_text": (
+                f"Em {tournament_name} {year}: "
+                f"{winner.split()[-1]} venceu {score} na {round_}"
+            ),
+        }
+
+    except Exception as e:
+        log.debug(f"get_same_tournament_h2h falhou: {e}")
+        return None
+
 
 
 def build_scout_post_data(match_data: dict) -> dict:

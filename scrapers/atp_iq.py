@@ -73,19 +73,34 @@ def get_shocking_stat(player_name: str, tournament_name: str = None) -> dict:
 def get_h2h_card(player_a: str, player_b: str, tournament_name: str = None) -> dict:
     """
     Gera dados completos de H2H para um card pré-jogo.
-    Retorna dict pronto para ser injetado no template.
+    Inclui contexto histórico do mesmo torneio se disponível.
     """
+    from scrapers.match_scout import get_same_tournament_h2h
+
     surface = _detect_surface(tournament_name)
-    h2h = get_h2h(player_a, player_b, surface=surface)
+    h2h     = get_h2h(player_a, player_b, surface=surface)
+
+    # Contexto do mesmo torneio (ex: "Roland Garros 2025: Sinner venceu 6-4 7-5")
+    tourn_ctx = None
+    if tournament_name:
+        try:
+            tourn_ctx = get_same_tournament_h2h(player_a, player_b, tournament_name)
+        except Exception as e:
+            log.debug(f"get_same_tournament_h2h falhou: {e}")
+
+    subtext = h2h["insight"]
+    if tourn_ctx:
+        subtext = f"{h2h['insight']}\n{tourn_ctx['context_text']}"
 
     chart_path = _build_h2h_chart(h2h)
 
     return {
         "headline": f"H2H: {player_a.split()[-1].upper()} vs {player_b.split()[-1].upper()}",
-        "subtext":  h2h["insight"],
+        "subtext":  subtext,
         "chart_path": chart_path,
         "stat_type": "h2h",
         "raw": h2h,
+        "tournament_context": tourn_ctx,
     }
 
 
