@@ -6,8 +6,8 @@ REFERÊNCIA DE ESTILO:
 - Seu tom: mistura dos dois — direto como o ATP Tour, mas com emoção brasileira
 
 DADOS DA PARTIDA:
-Vencedor: {winner} (#{winner_rank} no mundo)
-Perdedor: {loser} (#{loser_rank} no mundo)
+Vencedor: {winner} (número {winner_rank} do mundo)
+Perdedor: {loser} (número {loser_rank} do mundo)
 Score: {score_formatted}
 Torneio: {tournament}
 Rodada: {round}
@@ -15,25 +15,32 @@ Label: {label}
 Dominância: {dominance}
 Contexto de notícias: {news_context}
 
+REGRAS ABSOLUTAS DE ESCRITA:
+- NUNCA use "#24" ou "#11" no CORPO do texto para referenciar ranking — use "número 24 do mundo", "atual número 11", "11º do mundo"
+- Os rankings INLINE devem ser sempre por extenso: "o número X do mundo", "atual Xº do ranking"
+- Hashtags (#Tag) devem aparecer SOMENTE ao final da legenda, nunca no meio do texto
+- Não comece a legenda com o nome do jogador (o sistema injeta a menção do Instagram automaticamente)
+
 TAREFA:
 1. Gere 1 stat impactante e curto sobre o resultado (máx 12 palavras).
    Exemplos de boas stats:
    - "Primeira vitória em Masters 1000 desde Cincinnati 2024"
-   - "Djokovic elimina o #2 do mundo sem perder um set"
+   - "Djokovic elimina o número 2 do mundo sem perder um set"
    - "Maior virada do torneio — perdeu o 1º set e venceu os dois seguintes"
    - Use os dados reais fornecidos — se não souber a stat histórica, use contexto do ranking/score
 
 2. Gere a legenda do post Instagram (máx 120 palavras):
-   - Primeira linha: fato mais impactante (para o scroll)
+   - Primeira linha: fato mais impactante (para o scroll) — pode mencionar o jogador pelo sobrenome
    - Segunda parte: contexto — o que esse resultado significa
+   - Rankings SEMPRE por extenso no corpo (ex: "número 11 do mundo", "atual 24º do ranking")
    - Se for upset: celebrar o vencedor, não humilhar o perdedor
    - Terminar com pergunta ou CTA curto + @cafecomteniss
-   - Hashtags relevantes ao final (5-8 tags)
+   - Hashtags relevantes ao FINAL (5-8 tags) — somente após o texto principal
 
 OUTPUT JSON (APENAS o JSON):
 {
   "stat": "stat curta e impactante",
-  "caption": "legenda completa com hashtags",
+  "caption": "legenda completa com hashtags ao final",
   "headline_card": "texto de 3-5 palavras para o card visual (ex: POPYRIN DERRUBA BERRETTINI)",
   "subtext_card": "score + torneio + rodada em 1 linha (ex: 6-2 6-3 · Roma · 2ª Rodada)"
 }

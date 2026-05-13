@@ -5,6 +5,7 @@ Publicado em < 5 min após a partida terminar.
 """
 
 import asyncio
+import re
 import time
 from pathlib import Path
 from generators.content import ContentGenerator, _load_prompt
@@ -16,6 +17,65 @@ log = get_logger(__name__)
 
 OUTPUT_DIR = Path("output/queue")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Handles oficiais dos jogadores monitorados no Instagram
+# Fonte: perfis verificados — atualizar quando necessario
+PLAYER_IG_HANDLES: dict[str, str] = {
+    "Jannik Sinner":        "@janniksin",
+    "Carlos Alcaraz":       "@carlitosalcarazof",
+    "Novak Djokovic":       "@djokernole",
+    "Daniil Medvedev":      "@medwed33",
+    "Alexander Zverev":     "@alexzverev123",
+    "Casper Ruud":          "@casperruud98",
+    "Andrey Rublev":        "@andreyrublev",
+    "Holger Rune":          "@holgerrune2003",
+    "Taylor Fritz":         "@taylor_fritz17",
+    "Tommy Paul":           "@tommypaul",
+    "Stefanos Tsitsipas":   "@stefanostsitsipas98",
+    "Hubert Hurkacz":       "@hubert.hurkacz",
+    "Ben Shelton":          "@bshelton.tennis",
+    "Lorenzo Musetti":      "@lorenzomusetti6",
+    "Joao Fonseca":         "@joaofonsecaoficial",
+    "João Fonseca":         "@joaofonsecaoficial",
+    "Iga Swiatek":          "@iga.swiatek",
+    "Aryna Sabalenka":      "@aryna.sabalenka",
+    "Coco Gauff":           "@cocogauff",
+    "Elena Rybakina":       "@elrybakina",
+    "Jessica Pegula":       "@jpegula",
+    "Madison Keys":         "@madisonkeys",
+    "Beatriz Haddad Maia":  "@biahaddadmaia",
+}
+
+
+def _get_player_handle(name: str) -> str | None:
+    """Retorna o handle do IG para o jogador, ou None se desconhecido."""
+    # Busca exata
+    if name in PLAYER_IG_HANDLES:
+        return PLAYER_IG_HANDLES[name]
+    # Busca parcial pelo sobrenome
+    name_lower = name.lower()
+    for full_name, handle in PLAYER_IG_HANDLES.items():
+        if full_name.lower().split()[-1] in name_lower:
+            return handle
+    return None
+
+
+def _extract_hashtags_and_clean(caption: str) -> tuple[list[str], str]:
+    """
+    Extrai hashtags reais (#Palavra) da caption e devolve a caption limpa.
+    NÃO remove #Número (rankings como #24, #11) do corpo do texto.
+    Regra: hashtag real tem pelo menos 1 letra (ex: #CafeComTenis, #Roma).
+    Rankings são apenas dígitos (ex: #24) e ficam no texto.
+    """
+    # Hashtags reais = # seguido de ao menos 1 letra (pode ter números depois)
+    real_hashtag_pattern = re.compile(r'#[a-zA-ZÀ-ÿ][\w]*')
+    hashtags = real_hashtag_pattern.findall(caption)
+    # Limpar: remover as hashtags reais do corpo (ficam só na lista separada)
+    caption_clean = real_hashtag_pattern.sub('', caption).strip()
+    # Normalizar espaços múltiplos
+    caption_clean = re.sub(r'[ \t]+', ' ', caption_clean)
+    caption_clean = re.sub(r'\n{3,}', '\n\n', caption_clean).strip()
+    return hashtags, caption_clean
 
 
 async def generate_match_result_card(match_context: dict) -> dict | None:
@@ -52,10 +112,14 @@ async def generate_match_result_card(match_context: dict) -> dict | None:
     subtext_card  = data.get("subtext_card", f"{match_context['score_formatted']} · {tournament}")
     hashtags      = []
 
-    # Extrair hashtags da caption se presentes
-    import re
-    hashtags = re.findall(r"#\w+", caption)
-    caption_clean = re.sub(r"\s*#\w+", "", caption).strip()
+    # Extrair hashtags reais SEM remover rankings numéricos (#24, #11)
+    hashtags, caption_clean = _extract_hashtags_and_clean(caption)
+
+    # Injetar handle do Instagram do vencedor no início da caption
+    winner_handle = _get_player_handle(winner)
+    if winner_handle and not caption_clean.startswith(winner_handle):
+        # Substituir o nome do vencedor pela menção na primeira ocorrência
+        caption_clean = caption_clean.replace(winner, winner_handle, 1)
 
     # Preparar post_data para o template post.html
     surface_map = {
