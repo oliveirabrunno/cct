@@ -1,0 +1,279 @@
+<!doctype html>
+<!--
+  ============================================================
+  CAFÉ COM TÊNIS — INSIGHT / SCOUT TEMPLATE (1080×1080)
+  Layout de dados: foto lateral + stats em blocos
+  ============================================================
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Insight · Café com Tênis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300..800&family=Geist+Mono:wght@400..700&display=swap" rel="stylesheet">
+
+<script id="post-data" type="application/json">
+{
+  "type": "scout",
+  "surface": "clay",
+  "badge": "SCOUT",
+  "kicker": "Scout pós-jogo · Roland Garros SF",
+  "player_name": "Jannik Sinner",
+  "vs": "Djokovic",
+  "score": "6-4  7-5  7-6(3)",
+  "image": "",
+  "stats": [
+    { "label": "1º Saque", "value": "51%", "bar": 51 },
+    { "label": "Pts no 1º Saque", "value": "79%", "bar": 79 },
+    { "label": "Pts no 2º Saque", "value": "63%", "bar": 63 },
+    { "label": "BPs Salvos", "value": "83%", "bar": 83 },
+    { "label": "Aces", "value": "10", "bar": 0 },
+    { "label": "Duplas Faltas", "value": "1", "bar": 0 }
+  ],
+  "headline": "SINNER DOMINA DJOKOVIC NO SAIBRO",
+  "credit": "Stats: Sackmann ATP Dataset"
+}
+</script>
+
+<style>
+  html, body { margin: 0; padding: 0; background: #0a0a0a; }
+  body { display: flex; align-items: center; justify-content: center;
+         min-height: 100vh; font-family: Geist, system-ui, sans-serif; }
+
+  #frame {
+    width: 1080px; height: 1080px; flex: 0 0 auto;
+    position: relative; overflow: hidden;
+    background: #0d0d0d; color: #fff;
+    box-shadow: 0 24px 80px rgba(0,0,0,.6);
+  }
+  @media (max-width: 1100px)  { #frame { transform: scale(calc(100vw / 1080)); } }
+  @media (max-height: 1100px) { #frame { transform: scale(calc(100vh / 1080)); } }
+
+  /* ── Photo (left half) ─────────────────────────────────── */
+  .photo-col {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 460px;
+  }
+  .photo {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: center top;
+  }
+  .photo-gradient {
+    position: absolute; inset: 0;
+    background: linear-gradient(
+      to right,
+      transparent 40%,
+      #0d0d0d 100%
+    ), linear-gradient(
+      to bottom,
+      transparent 50%,
+      rgba(0,0,0,.7) 100%
+    );
+  }
+  .photo-empty {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #1a1a1a 0%, #111 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .photo-empty svg { opacity: 0.08; width: 180px; height: 180px; }
+
+  /* ── Surface stripe ──────────────────────────────────────── */
+  .surface-stripe {
+    position: absolute;
+    top: 0; left: 450px;
+    width: 6px; height: 100%;
+  }
+  .surface-clay  .surface-stripe { background: linear-gradient(to bottom, #C0623A, #8B3A1C); }
+  .surface-hard  .surface-stripe { background: linear-gradient(to bottom, #2775B8, #1a4f8c); }
+  .surface-grass .surface-stripe { background: linear-gradient(to bottom, #4a9e5c, #2d6e3a); }
+  .surface-neutral .surface-stripe { background: linear-gradient(to bottom, #C8F135, #8fb020); }
+
+  /* ── Data panel (right) ──────────────────────────────────── */
+  .data-col {
+    position: absolute;
+    top: 0; left: 470px; right: 0; bottom: 0;
+    padding: 52px 48px 52px 36px;
+    display: flex; flex-direction: column;
+  }
+
+  /* Header */
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+  .badge {
+    font-size: 11px; font-weight: 700; letter-spacing: .18em;
+    color: #C8F135; text-transform: uppercase; font-family: 'Geist Mono', monospace;
+    background: rgba(200,241,53,.12); border: 1px solid rgba(200,241,53,.3);
+    padding: 4px 12px; border-radius: 3px;
+  }
+  .logo { font-size: 11px; color: rgba(255,255,255,.35); letter-spacing: .06em; font-family: 'Geist Mono', monospace; }
+
+  /* Kicker */
+  .kicker {
+    font-size: 12px; font-weight: 400; letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(255,255,255,.45); font-family: 'Geist Mono', monospace; margin-bottom: 12px;
+  }
+
+  /* Matchup */
+  .matchup-box {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+  }
+  .player-name {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 36px; line-height: 1.1;
+    color: #fff; font-weight: 400; margin-bottom: 4px;
+  }
+  .vs-line {
+    font-size: 13px; color: rgba(255,255,255,.4);
+    font-family: 'Geist Mono', monospace; letter-spacing: .06em;
+    margin-bottom: 8px;
+  }
+  .score-display {
+    font-family: 'Geist Mono', monospace;
+    font-size: 20px; font-weight: 700;
+    color: #C8F135; letter-spacing: .04em;
+  }
+
+  /* Stats */
+  .stats-title {
+    font-size: 10px; font-weight: 700; letter-spacing: .2em;
+    color: rgba(255,255,255,.3); text-transform: uppercase; margin-bottom: 16px;
+    font-family: 'Geist Mono', monospace;
+  }
+  .stats-grid { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+  .stat-row { display: flex; flex-direction: column; gap: 6px; }
+  .stat-meta { display: flex; justify-content: space-between; align-items: baseline; }
+  .stat-label { font-size: 13px; color: rgba(255,255,255,.55); font-weight: 400; }
+  .stat-value { font-family: 'Geist Mono', monospace; font-size: 16px; font-weight: 700; color: #fff; }
+  .stat-bar-bg {
+    height: 4px; background: rgba(255,255,255,.08);
+    border-radius: 2px; overflow: hidden;
+  }
+  .stat-bar-fill {
+    height: 100%; border-radius: 2px;
+    transition: width .4s ease;
+  }
+  .surface-clay   .stat-bar-fill { background: linear-gradient(to right, #C0623A, #e8854a); }
+  .surface-hard   .stat-bar-fill { background: linear-gradient(to right, #2775B8, #4a9fe0); }
+  .surface-grass  .stat-bar-fill { background: linear-gradient(to right, #4a9e5c, #6abf7a); }
+  .surface-neutral .stat-bar-fill { background: linear-gradient(to right, #8fb020, #C8F135); }
+
+  /* No-bar stat (aces, DFs) */
+  .stat-pill {
+    display: inline-block;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 14px; font-weight: 700; color: #fff;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 20px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .credit { font-size: 10px; color: rgba(255,255,255,.2); font-family: 'Geist Mono', monospace; }
+  .ig-handle { font-size: 10px; color: rgba(255,255,255,.2); font-family: 'Geist Mono', monospace; letter-spacing: .06em; }
+</style>
+</head>
+<body>
+<div id="frame">
+  <!-- Photo column -->
+  <div class="photo-col">
+    <div class="photo-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    </div>
+    <img class="photo" id="player-photo" src="" alt="" style="display:none;" />
+    <div class="photo-gradient"></div>
+  </div>
+
+  <!-- Surface stripe -->
+  <div class="surface-stripe"></div>
+
+  <!-- Data column -->
+  <div class="data-col">
+    <div class="header">
+      <span class="badge" id="badge-el">SCOUT</span>
+      <span class="logo">☕ café com tênis</span>
+    </div>
+
+    <div class="kicker" id="kicker-el">Scout pós-jogo</div>
+
+    <div class="matchup-box">
+      <div class="player-name" id="player-name-el">Jannik Sinner</div>
+      <div class="vs-line" id="vs-el">def. Djokovic</div>
+      <div class="score-display" id="score-el">6-4  7-5  7-6(3)</div>
+    </div>
+
+    <div class="stats-title">ESTATÍSTICAS DE SAQUE</div>
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <div class="footer">
+      <span class="credit" id="credit-el">Stats: Sackmann ATP Dataset</span>
+      <span class="ig-handle">@CAFECOMTENISS</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const raw = document.getElementById('post-data').textContent;
+  const d = JSON.parse(raw);
+
+  // Surface class
+  const frame = document.getElementById('frame');
+  const surf = (d.surface || 'neutral').toLowerCase();
+  frame.classList.add('surface-' + surf);
+
+  // Photo
+  if (d.image) {
+    const img = document.getElementById('player-photo');
+    img.src = d.image;
+    img.style.display = 'block';
+    img.onerror = () => { img.style.display = 'none'; };
+  }
+
+  // Text fields
+  document.getElementById('badge-el').textContent   = d.badge || 'INSIGHT';
+  document.getElementById('kicker-el').textContent  = d.kicker || '';
+  document.getElementById('player-name-el').textContent = d.player_name || '';
+  document.getElementById('vs-el').textContent      = d.vs ? 'def. ' + d.vs : '';
+  document.getElementById('score-el').textContent   = d.score || '';
+  document.getElementById('credit-el').textContent  = d.credit || '';
+
+  // Stats
+  const grid = document.getElementById('stats-grid');
+  const stats = d.stats || [];
+  stats.forEach(stat => {
+    const row = document.createElement('div');
+    row.className = 'stat-row';
+
+    if (stat.bar > 0) {
+      row.innerHTML = `
+        <div class="stat-meta">
+          <span class="stat-label">${stat.label}</span>
+          <span class="stat-value">${stat.value}</span>
+        </div>
+        <div class="stat-bar-bg">
+          <div class="stat-bar-fill" style="width:${Math.min(stat.bar, 100)}%"></div>
+        </div>`;
+    } else {
+      row.innerHTML = `
+        <div class="stat-meta">
+          <span class="stat-label">${stat.label}</span>
+          <span class="stat-pill">${stat.value}</span>
+        </div>`;
+    }
+    grid.appendChild(row);
+  });
+})();
+</script>
+</body>
+</html>

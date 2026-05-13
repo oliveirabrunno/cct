@@ -23,6 +23,7 @@ def _image_to_base64(filepath: str) -> str:
 SCREENSHOT_JS = Path(__file__).parent / "screenshot.js"
 TEMPLATE_HTML = Path("config/templates/carousel.html")
 POST_TEMPLATE_HTML = Path("config/templates/post.html")
+INSIGHT_TEMPLATE_HTML = Path("config/templates/insight.html")
 OUTPUT_DIR = Path("output/queue")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -176,7 +177,17 @@ async def generate_post(
             log.warning(f"Sem foto para {player_query}, card pode ficar vazio.")
             post_data["image"] = ""
             
-    html_content = POST_TEMPLATE_HTML.read_text(encoding="utf-8")
+    # Selecionar template: insight.html para scout/h2h com stats, post.html para o resto
+    use_insight_template = (
+        post_type in ("scout", "insight", "h2h")
+        or "stats" in post_data
+    ) and INSIGHT_TEMPLATE_HTML.exists()
+
+    template_file = INSIGHT_TEMPLATE_HTML if use_insight_template else POST_TEMPLATE_HTML
+    html_content = template_file.read_text(encoding="utf-8")
+
+    if use_insight_template:
+        log.debug(f"Usando template insight.html para '{post_type}'")
     
     import re
     json_str = json.dumps(post_data, ensure_ascii=False)

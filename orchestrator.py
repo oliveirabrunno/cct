@@ -31,6 +31,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import base64
+from pathlib import Path
+
 from scrapers.google_news import fetch_recent_news, search_news
 from scrapers.tournament_draw import CURRENT_TOURNAMENT
 CURRENT_TOURNAMENT_SHORT = CURRENT_TOURNAMENT.get("name", "ATP Tour")
