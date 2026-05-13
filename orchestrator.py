@@ -5,6 +5,8 @@ Modos de execução:
   python orchestrator.py daily          # pipeline diário completo (09:00 BRT)
   python orchestrator.py on-this-day    # card histórico do dia (06:00 BRT)
   python orchestrator.py stat-card      # stat chocante do player trending (10:30 BRT)
+  python orchestrator.py stat-historico "Sinner" "31 vitórias consecutivas em Masters 1000"
+  python orchestrator.py stat-historico "Fonseca" "Melhor ranking brasileiro desde Guga"
   python orchestrator.py night-recap    # reel recap do dia (21:00 BRT)
   python orchestrator.py trends         # verifica atletas em trend agora
   python orchestrator.py live           # checa scores ao vivo e gera breaking news
@@ -785,12 +787,50 @@ async def run_test_draw():
         print("\nERRO ao gerar draw overview")
 
 
+async def run_stat_historico():
+    """
+    Gera e publica um card de estatística histórica/recorde sob demanda.
+
+    Uso:
+      python orchestrator.py stat-historico "Jogador" "Descrição do feito"
+
+    Exemplos:
+      python orchestrator.py stat-historico "Jannik Sinner" "31 vitórias consecutivas em Masters 1000"
+      python orchestrator.py stat-historico "Carlos Alcaraz" "Mais jovem a vencer 3 Grand Slams diferentes"
+      python orchestrator.py stat-historico "João Fonseca" "Melhor ranking brasileiro desde Guga Kuerten"
+    """
+    from generators.stat_historico import generate_stat_historico
+
+    # Pegar argumentos da linha de comando
+    player_name = sys.argv[2] if len(sys.argv) > 2 else None
+    stat_fact   = sys.argv[3] if len(sys.argv) > 3 else None
+
+    if not player_name or not stat_fact:
+        print("\n❌ USO: python orchestrator.py stat-historico \"Jogador\" \"Fato/Recorde\"")
+        print("\nExemplos:")
+        print('  python orchestrator.py stat-historico "Jannik Sinner" "31 vitórias consecutivas em Masters 1000"')
+        print('  python orchestrator.py stat-historico "João Fonseca" "Mais jovem brasileiro no top 30 desde Guga"')
+        return
+
+    log.info(f"=== Stat Histórica: {player_name} | {stat_fact} ===")
+
+    result = await generate_stat_historico(player_name, stat_fact, publish=True)
+
+    if result:
+        print(f"\n✅ Card gerado: {result['image_path']}")
+        print(f"   Headline: {result['headline']}")
+        print(f"   Caption: {result['caption'][:120]}...")
+    else:
+        print("\n❌ Falha ao gerar card")
+
+
 async def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "help"
     modes = {
         "daily":          run_daily_pipeline,
         "on-this-day":    run_on_this_day,
         "stat-card":      run_stat_card,
+        "stat-historico":  run_stat_historico,
         "afternoon-insight": run_afternoon_insight,
         "night-recap":    run_night_recap,
         "trends":         run_trend_check,
