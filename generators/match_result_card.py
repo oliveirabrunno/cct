@@ -18,45 +18,24 @@ log = get_logger(__name__)
 OUTPUT_DIR = Path("output/queue")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Handles oficiais dos jogadores monitorados no Instagram
-# Fonte: perfis verificados — atualizar quando necessario
-PLAYER_IG_HANDLES: dict[str, str] = {
-    "Jannik Sinner":        "@janniksin",
-    "Carlos Alcaraz":       "@carlitosalcarazof",
-    "Novak Djokovic":       "@djokernole",
-    "Daniil Medvedev":      "@medwed33",
-    "Alexander Zverev":     "@alexzverev123",
-    "Casper Ruud":          "@casperruud98",
-    "Andrey Rublev":        "@andreyrublev",
-    "Holger Rune":          "@holgerrune2003",
-    "Taylor Fritz":         "@taylor_fritz17",
-    "Tommy Paul":           "@tommypaul",
-    "Stefanos Tsitsipas":   "@stefanostsitsipas98",
-    "Hubert Hurkacz":       "@hubert.hurkacz",
-    "Ben Shelton":          "@bshelton.tennis",
-    "Lorenzo Musetti":      "@lorenzomusetti6",
-    "Joao Fonseca":         "@joaofonsecaoficial",
-    "João Fonseca":         "@joaofonsecaoficial",
-    "Iga Swiatek":          "@iga.swiatek",
-    "Aryna Sabalenka":      "@aryna.sabalenka",
-    "Coco Gauff":           "@cocogauff",
-    "Elena Rybakina":       "@elrybakina",
-    "Jessica Pegula":       "@jpegula",
-    "Madison Keys":         "@madisonkeys",
-    "Beatriz Haddad Maia":  "@biahaddadmaia",
-}
+# ─── Instagram Handles ────────────────────────────────────────────────────────
+# DESABILITADO: não há fonte verificada automaticamente para handles de IG.
+# Marcar o perfil errado é pior do que não marcar.
+# Para habilitar: verifique manualmente cada handle e descomente.
+#
+# PLAYER_IG_HANDLES: dict[str, str] = {
+#     "Jannik Sinner":        "@janniksin",
+#     "Carlos Alcaraz":       "@carlitosalcarazof",
+#     ...
+# }
 
 
 def _get_player_handle(name: str) -> str | None:
-    """Retorna o handle do IG para o jogador, ou None se desconhecido."""
-    # Busca exata
-    if name in PLAYER_IG_HANDLES:
-        return PLAYER_IG_HANDLES[name]
-    # Busca parcial pelo sobrenome
-    name_lower = name.lower()
-    for full_name, handle in PLAYER_IG_HANDLES.items():
-        if full_name.lower().split()[-1] in name_lower:
-            return handle
+    """
+    Retorna o handle verificado do IG para o jogador.
+    Retorna None enquanto não houver fonte confiável de verificação.
+    """
+    # Sem fonte verificada → nunca marcar para evitar mencionar perfil errado
     return None
 
 
@@ -67,6 +46,7 @@ def _extract_hashtags_and_clean(caption: str) -> tuple[list[str], str]:
     Regra: hashtag real tem pelo menos 1 letra (ex: #CafeComTenis, #Roma).
     Rankings são apenas dígitos (ex: #24) e ficam no texto.
     """
+    import re
     # Hashtags reais = # seguido de ao menos 1 letra (pode ter números depois)
     real_hashtag_pattern = re.compile(r'#[a-zA-ZÀ-ÿ][\w]*')
     hashtags = real_hashtag_pattern.findall(caption)
@@ -76,6 +56,7 @@ def _extract_hashtags_and_clean(caption: str) -> tuple[list[str], str]:
     caption_clean = re.sub(r'[ \t]+', ' ', caption_clean)
     caption_clean = re.sub(r'\n{3,}', '\n\n', caption_clean).strip()
     return hashtags, caption_clean
+
 
 
 async def generate_match_result_card(match_context: dict) -> dict | None:
