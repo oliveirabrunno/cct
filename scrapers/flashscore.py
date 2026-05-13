@@ -150,3 +150,61 @@ async def check_completed_matches() -> list[dict]:
 
     log.info(f"Partidas finalizadas (monitoradas): {len(completed)}")
     return completed
+
+
+async def get_recent_tournament_winner(tour: str = "ATP") -> str | None:
+    """
+    Busca o vencedor do torneio mais recente (final concluída) para ATP ou WTA.
+    Usa Playwright para pegar o último resultado de final em flashscore.com.
+    Retorna nome completo do vencedor ou None se não encontrar.
+    """
+    try:
+        from playwright.async_api import async_playwright
+
+        tour_lower = tour.lower()
+        url = f"https://www.flashscore.com/tennis/{tour_lower}/"
+
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(headless=True)
+            page = await browser.new_page(
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                           "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+            await page.goto(url, timeout=30000, wait_until="domcontentloaded")
+            await page.wait_for_timeout(3000)
+
+            # Procurar partidas marcadas como "Final" já finalizadas
+            result = await page.evaluate("""() => {
+                const rows = document.querySelectorAll("[class*='event__match']");
+                for (const row of rows) {
+                    const status = row.querySelector("[class*='event__stage']");
+                    const round  = row.querySelector("[class*='event__round']");
+                    if (!status) continue;
+                    const st = status.textContent.trim().toLowerCase();
+                    const rd = round ? round.textContent.trim().toLowerCase() : '';
+                    const finished = ['finished','fim','fin','ended','final'].some(s => st.includes(s));
+                    const isFinal = rd.includes('final') || rd.includes('f ');
+                    if (finished && isFinal) {
+                        const home  = row.querySelector("[class*='event__participant--home']");
+                        const away  = row.querySelector("[class*='event__participant--away']");
+                        const scoreH = row.querySelector("[class*='event__score--home']");
+                        const scoreA = row.querySelector("[class*='event__score--away']");
+                        if (!home || !away) continue;
+                        const sH = parseInt(scoreH ? scoreH.textContent.trim() : '0');
+                        const sA = parseInt(scoreA ? scoreA.textContent.trim() : '0');
+                        return sH > sA ? home.textContent.trim() : away.textContent.trim();
+                    }
+                }
+                return null;
+            }""")
+            await browser.close()
+
+        if result:
+            winner_full = _resolve_full_name(result)
+            log.info(f"Vencedor recente ({tour}): {result} → {winner_full}")
+            return winner_full
+
+    except Exception as e:
+        log.debug(f"get_recent_tournament_winner falhou ({tour}): {e}")
+
+    return None

@@ -2,12 +2,16 @@
 Ranking Carousel — gera 2 slides 1080×1350 (ATP + WTA) com o template ranking.html.
 
 Pipeline:
-  1. Busca top 30 ao vivo via live-tennis.eu (campo `move` = posições subidas/caídas)
-  2. Persiste o ranking atual em data/ranking_cache_{tour}.json para comparação futura
+  1. Busca top 30 ao vivo via live-tennis.eu
+  2. Compara com cache da semana anterior (por nome) para calcular change real
   3. Injeta JSON no ranking.html e tira screenshot com Puppeteer
-  4. Busca foto do vencedor do último torneio via ImageManager
+  4. Busca foto do vencedor do torneio mais recente (com troféu se possível)
   5. Claude gera o resumo textual da semana
   6. Retorna dict com image_paths, caption, hashtags
+
+Bug history:
+  - 2026-05-13: campo `move` de live-tennis.eu NÃO é variação de posição
+    (sempre positivo / representa outro índice interno). Fix: usar cache diff.
 """
 
 import json
@@ -85,8 +89,16 @@ def _calc_change(curr_rank: int, prev_players: list[dict]) -> int | None:
 
 def build_ranking_data(tour: str, top_n: int = 30) -> tuple[list[dict], list[dict]]:
     """
-    Busca o ranking atual e retorna (players_current, players_prev_week).
-    Usa o campo `move` da live-tennis.eu como change (posições subidas/caídas).
+    Busca o ranking atual e calcula change comparando com cache da semana anterior.
+
+    Change = prev_rank - curr_rank
+      > 0  → subiu (badge verde)  ex: estava #8, agora #5  → +3
+      < 0  → caiu  (badge vermelho) ex: estava #5, agora #8  → -3
+      = 0  → estável (traço)
+      None → novo no top 30 (badge NEW)
+
+    IMPORTANTE: NÃO usa o campo `move` de live-tennis.eu — esse campo
+    é um índice interno do site, sempre positivo, não representa variação real.
     """
     from scrapers.live_ranking import fetch_atp_live_rankings, fetch_wta_live_rankings
 
@@ -97,28 +109,40 @@ def build_ranking_data(tour: str, top_n: int = 30) -> tuple[list[dict], list[dic
     else:
         raw = fetch_wta_live_rankings(top_n)
 
-    # Mapear: campo `move` de live-tennis.eu é as posições subidas (positivo=subiu)
-    # Mas precisamos saber se é novo no top 30
-    prev_names = {p["name"].lower() for p in prev} if prev else set()
+    # Construir lookup: nome normalizado → rank da semana passada
+    def _norm(name: str) -> str:
+        return name.lower().strip()
+
+    prev_lookup: dict[str, int] = {_norm(p["name"]): p["rank"] for p in prev}
+    prev_names = set(prev_lookup.keys())
+    has_prev = bool(prev)
 
     players = []
     for p in raw[:top_n]:
-        name_lower = p["name"].lower()
-        move = p.get("move", 0)  # já vem como int do scraper
+        curr_rank  = p["rank"]
+        name_norm  = _norm(p["name"])
 
-        # Detectar se é novo no top 30 esta semana
-        is_new = bool(prev) and name_lower not in prev_names
+        if not has_prev:
+            # Primeira execução: sem histórico — mostrar traço (0) para todos
+            change = 0
+        elif name_norm not in prev_names:
+            # Estava fora do top 30 na semana passada → NEW
+            change = None
+        else:
+            # prev_rank - curr_rank: positivo = subiu, negativo = caiu
+            prev_rank = prev_lookup[name_norm]
+            change = prev_rank - curr_rank
 
         players.append({
-            "rank":    p["rank"],
+            "rank":    curr_rank,
             "name":    p["name"],
             "country": p.get("country", ""),
             "flag":    _flag(p.get("country", "")),
             "points":  p["points"],
-            "change":  None if is_new else move,   # null = NEW badge
+            "change":  change,
         })
 
-    # Salvar cache para a próxima semana
+    # Salvar cache com ranking desta semana (base para comparação na próxima)
     _save_cache(tour, [{"name": p["name"], "rank": p["rank"]} for p in players])
 
     return players, prev
@@ -155,33 +179,62 @@ def _image_to_base64(filepath: str) -> str:
     return f"data:{mime};base64,{b64}"
 
 
-async def _fetch_tournament_winner_photo(tour: str) -> tuple[str, str]:
+async def _fetch_tournament_winner_photo(tour: str, tournament_name: str) -> tuple[str, str, str]:
     """
-    Tenta buscar foto do vencedor do torneio mais recente segurando o troféu.
-    Retorna (base64_image, credit_text).
+    Busca foto do vencedor do torneio mais recente com troféu.
+    Estratégia:
+      1. Tenta detectar vencedor recente via Flashscore (match finalizado de torneio grande)
+      2. Busca imagem com query específica: '{winner} {tournament} trophy'
+      3. Fallback: #1 do ranking
+    Retorna (base64_image, credit_text, winner_name).
     """
+    img_manager = ImageManager()
+    winner_name = None
+
+    # Tentar descobrir vencedor real via Flashscore
     try:
-        from scrapers.live_ranking import fetch_atp_live_rankings, fetch_wta_live_rankings
-        # Pegar o #1 do ranking como proxy do mais relevante da semana
-        top = fetch_atp_live_rankings(1) if tour.upper() == "ATP" else fetch_wta_live_rankings(1)
-        winner_name = top[0]["name"] if top else ("Jannik Sinner" if tour.upper() == "ATP" else "Aryna Sabalenka")
-
-        img_manager = ImageManager()
-        # Tentar primeiro com "trophy" para pegar foto com troféu
-        img_data = await img_manager.get_player_image(winner_name, image_type="trophy")
-        if not img_data or not img_data.get("path"):
-            img_data = await img_manager.get_player_image(winner_name, image_type="any")
-
-        if img_data and img_data.get("path"):
-            b64 = _image_to_base64(img_data["path"])
-            credit = img_data.get("credit_text", "ATP Tour") or "ATP Tour"
-            log.info(f"Foto para ranking slide ({tour}): {winner_name}")
-            return b64, credit, winner_name
-
+        from scrapers.flashscore import get_recent_tournament_winner
+        winner_name = await get_recent_tournament_winner(tour)
+        if winner_name:
+            log.info(f"Vencedor recente ({tour}): {winner_name}")
     except Exception as e:
-        log.warning(f"Falha ao buscar foto para ranking {tour}: {e}")
+        log.debug(f"Flashscore winner lookup falhou: {e}")
 
-    return "", "ATP Tour", "Jannik Sinner"
+    # Fallback: #1 do ranking
+    if not winner_name:
+        try:
+            from scrapers.live_ranking import fetch_atp_live_rankings, fetch_wta_live_rankings
+            top = fetch_atp_live_rankings(1) if tour.upper() == "ATP" else fetch_wta_live_rankings(1)
+            winner_name = top[0]["name"] if top else ("Jannik Sinner" if tour.upper() == "ATP" else "Aryna Sabalenka")
+        except Exception:
+            winner_name = "Jannik Sinner" if tour.upper() == "ATP" else "Aryna Sabalenka"
+
+    # Buscar foto com query de troféu específico do torneio
+    trophy_queries = [
+        f"{winner_name} {tournament_name} trophy",
+        f"{winner_name} {tournament_name} winner",
+        f"{winner_name} trophy",
+        winner_name,
+    ]
+
+    for query in trophy_queries:
+        try:
+            img_data = await img_manager.get_player_image(
+                winner_name,
+                image_type="trophy",
+                search_override=query,
+            )
+            if img_data and img_data.get("path"):
+                b64    = _image_to_base64(img_data["path"])
+                credit = img_data.get("credit_text", "ATP Tour") or "ATP Tour"
+                log.info(f"Foto troféu ({tour}): {winner_name} | query: '{query}'")
+                return b64, credit, winner_name
+        except Exception as e:
+            log.debug(f"Falha query '{query}': {e}")
+            continue
+
+    log.warning(f"Sem foto de troféu para {tour} — usando cache genérico")
+    return "", f"{tour} Tour", winner_name
 
 
 def _generate_slide_html(
@@ -329,7 +382,7 @@ async def generate_ranking_carousel(
             continue
 
         movers   = find_movers(players)
-        b64, credit, winner = await _fetch_tournament_winner_photo(tour)
+        b64, credit, winner = await _fetch_tournament_winner_photo(tour, tournament_name)
 
         html = _generate_slide_html(
             tour        = tour,

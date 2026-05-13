@@ -27,6 +27,7 @@ class ImageManager:
         download_if_missing: bool = True,
         tournament_name: str = None,
         year: int = None,
+        search_override: str = None,   # query customizada (ex: "Alcaraz Roma trophy")
     ) -> dict | None:
         if not player_name:
             return self._get_placeholder("Desconhecido")
@@ -77,8 +78,13 @@ class ImageManager:
                 pass
             return restored
 
-        # 3. Google Images (via SerpAPI) — fonte primária temporária para pegar fotos do saibro/temporada atual
-        result = await self._try_google_images(player_name, image_type, tournament_name=tournament_name, year=year)
+        # 3. Google Images (via SerpAPI) — fonte primária para pegar fotos do saibro/temporada atual
+        result = await self._try_google_images(
+            player_name, image_type,
+            tournament_name=tournament_name,
+            year=year,
+            search_override=search_override,
+        )
         if result:
             return result
 
@@ -126,10 +132,14 @@ class ImageManager:
 
     # ── Fontes individuais ────────────────────────────────────────────────────
 
-    async def _try_google_images(self, player_name: str, image_type: str, tournament_name: str = None, year: int = None) -> dict | None:
+    async def _try_google_images(self, player_name: str, image_type: str, tournament_name: str = None, year: int = None, search_override: str = None) -> dict | None:
         try:
             from utils.dedup import is_duplicate_image_url, register_image_url, register_used_image
-            photos = search_player_images(player_name, count=5, year=year, tournament_name=tournament_name)
+            photos = search_player_images(
+                player_name, count=5, year=year,
+                tournament_name=tournament_name,
+                search_override=search_override,
+            )
             for photo in photos:
                 url = photo.get("url", "")
                 if not url:

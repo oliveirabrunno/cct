@@ -98,14 +98,20 @@ def search_cc_player_photo(player_name: str, year: int = None, tournament_name: 
     return None
 
 
-def search_player_images(player_name: str, count: int = 4, year: int = None, tournament_name: str = None) -> list[dict]:
-    """Retorna múltiplas fotos CC do jogador para variedade de slides."""
+def search_player_images(player_name: str, count: int = 4, year: int = None, tournament_name: str = None, search_override: str = None) -> list[dict]:
+    """Retorna múltiplas fotos CC do jogador para variedade de slides.
+    
+    search_override: quando fornecido, usa esta string como query SerpAPI diretamente
+                     (ex: "Alcaraz Roma Masters trophy 2026")
+    """
     if not SERPAPI_KEY:
         return []
 
     target_year = year or CURRENT_YEAR
     
-    if tournament_name:
+    if search_override:
+        query = search_override
+    elif tournament_name:
         query = f"{player_name} tennis {tournament_name} {target_year}"
     else:
         season = _get_season()
