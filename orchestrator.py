@@ -218,65 +218,108 @@ async def run_test_carousel():
 
 async def run_afternoon_insight():
     """
-    Novo fluxo educativo de Insights (15h00) usando ATP IQ e gráficos Matplotlib.
+    Insights educativos das 15h usando dados reais de tênis.
+    Seleção inteligente: H2H pré-jogo → stats de saque → líderes da temporada.
     """
     from generators.content import ContentGenerator, _load_prompt
     from generators.visual import generate_post
-    from publisher.rate_limiter import can_publish_feed_post
+    from scrapers.atp_iq import get_shocking_stat, get_h2h_card, get_season_leaders_card
+    import re
 
     log.info("=== Afternoon Insight 15:00 BRT ===")
-    
+
     detector = TrendDetector()
     trending = await detector.check_all_players()
-    player = trending[0]["player"] if trending else "Carlos Alcaraz"
-    
-    stat_data = get_shocking_stat(player)
-    
+    player   = trending[0]["player"] if trending else "Carlos Alcaraz"
+    tournament = trending[0].get("tournament", "") if trending else ""
+
+    # ── Seleção de tipo de post ───────────────────────────────────────────────
+    # Se há dois jogadores monitorados trending → H2H pré-jogo
+    stat_data = None
+    post_kicker = "Dado do Dia · Café com Tênis"
+
+    if len(trending) >= 2:
+        p1 = trending[0]["player"]
+        p2 = trending[1]["player"]
+        try:
+            h2h = get_h2h_card(p1, p2, tournament_name=tournament)
+            if h2h["raw"].get("total", 0) >= 2:
+                stat_data   = h2h
+                post_kicker = "H2H · Dados Reais ATP"
+                log.info(f"Insight: H2H {p1} vs {p2}")
+        except Exception as e:
+            log.debug(f"H2H falhou: {e}")
+
+    # Fallback: stat de saque/superfície do jogador trending
+    if not stat_data:
+        try:
+            stat_data   = get_shocking_stat(player, tournament_name=tournament)
+            post_kicker = "ATP IQ · Estatística Avançada"
+            log.info(f"Insight: stat card de {player}")
+        except Exception as e:
+            log.debug(f"get_shocking_stat falhou: {e}")
+
+    # Fallback final: líder de BP convertidos na temporada
+    if not stat_data or stat_data.get("stat_type") == "fallback":
+        try:
+            stat_data   = get_season_leaders_card("break-points-converted", tournament)
+            post_kicker = "Temporada 2025 · Saibro"
+            log.info("Insight: season leaders")
+        except Exception as e:
+            log.debug(f"season leaders falhou: {e}")
+
+    if not stat_data:
+        log.error("Nenhum dado disponível para o insight")
+        return
+
+    # ── Gerar legenda com Claude ─────────────────────────────────────────────
     content_gen = ContentGenerator()
-    system = _load_prompt("base_voice")
-    
+    system      = _load_prompt("base_voice")
+
     prompt = (
-        f"Crie uma legenda para o Instagram sobre este insight do {player}.\n"
+        f"Crie uma legenda para o Instagram sobre este insight de tênis.\n"
         f"Headline: {stat_data['headline']}\n"
         f"Contexto: {stat_data['subtext']}\n\n"
         "REGRAS ABSOLUTAS:\n"
         "- Máx 70 palavras, tom educativo de quem entende de tênis.\n"
+        "- Os dados são reais, baseados em estatísticas oficiais ATP.\n"
         "- Termine com uma pergunta para engajar.\n"
-        "Responda SOMENTE JSON: {\"caption\":\"\"}"
+        'Responda SOMENTE JSON: {"caption":""}'
     )
-    
-    raw = content_gen._call_claude(system, prompt, max_tokens=300)
-    data = content_gen._parse_json_response(raw)
-    caption = data.get("caption", stat_data["subtext"])
-    
+
+    raw     = content_gen._call_claude(system, prompt, max_tokens=300)
+    parsed  = content_gen._parse_json_response(raw)
+    caption = parsed.get("caption", stat_data["subtext"]) if parsed else stat_data["subtext"]
+
+    # ── Gerar visual ─────────────────────────────────────────────────────────
     post_data = {
         "surface": "neutral",
-        "badge": "Insight",
-        "kicker": "ATP IQ · Estatística Avançada",
-        "title": stat_data['headline'],
-        "subtitle": stat_data['subtext'],
-        "image": _image_to_base64(stat_data['chart_path']) if stat_data.get("chart_path") else "",
-        "credit": "Data: ATP Tennis IQ / PIF"
+        "badge":    "INSIGHT",
+        "kicker":   post_kicker,
+        "title":    stat_data["headline"],
+        "subtitle": stat_data["subtext"],
+        "image":    _image_to_base64(stat_data["chart_path"]) if stat_data.get("chart_path") else "",
+        "credit":   "Data: Sackmann ATP Dataset",
     }
-    
+
     path = await generate_post("insight", {"player": player}, post_data)
-    
     if not path:
         log.error("Falha ao gerar post do insight")
         return
-        
+
     publisher = _make_publisher()
     if hasattr(publisher, "is_duplicate_in_ig") and publisher.is_duplicate_in_ig([player], hours=18):
         log.warning(f"{player} já apareceu nas últimas 18h — skip insight")
         return
 
-    import re
-    hashtags = re.findall(r"#\w+", caption)
+    hashtags      = re.findall(r"#\w+", caption)
     caption_clean = re.sub(r"\s*#\w+", "", caption).strip()
-    
+
     ok = await publisher.publish_post(path, caption_clean, hashtags)
     if ok:
-        register_post("afternoon_insight", player, description=stat_data['headline'])
+        register_post("afternoon_insight", player, description=stat_data["headline"])
+
+
 
 
 async def run_test_story():
