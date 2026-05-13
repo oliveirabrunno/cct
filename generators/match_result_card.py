@@ -237,10 +237,29 @@ async def process_and_publish_match(match: dict, publisher) -> bool:
     """
     from scrapers.match_stats import build_match_context
     from utils.dedup import is_duplicate, register_post
+    from datetime import datetime, timedelta, timezone
 
     winner = match.get("winner", "")
     loser  = match.get("loser", "")
     score  = match.get("score", "")
+
+    # 2ª camada de frescor: rejeitar partidas com timestamp > 48h
+    # (1ª camada está no flashscore.py, esta é a salvaguarda final)
+    ts_str = match.get("timestamp")
+    if ts_str:
+        try:
+            ts = datetime.fromisoformat(ts_str)
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            age = datetime.now(tz=timezone.utc) - ts
+            if age > timedelta(hours=48):
+                log.warning(
+                    f"Partida ignorada (muito antiga — {age.days}d {age.seconds//3600}h): "
+                    f"{winner} vs {loser}"
+                )
+                return False
+        except Exception:
+            pass  # Sem timestamp válido: deixar passar (flashscore já filtrou)
 
     # Dedup: não publicar o mesmo jogo duas vezes
     match_key = f"{winner}_{loser}_{score}".lower().replace(" ", "_")

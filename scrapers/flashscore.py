@@ -1,13 +1,19 @@
 """
 Scores ao vivo de tênis via Flashscore (Playwright).
 Detecta resultados de partidas e dispara geração de breaking news.
+
+FILTRO DE FRESCOR: só retorna partidas das últimas MAX_MATCH_AGE_HOURS horas.
+Isso evita que jogos históricos de 2025 ou anteriores sejam postados como breaking news.
 """
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from utils.logger import get_logger
 
 log = get_logger(__name__)
+
+# Partidas mais velhas que este limite são ignoradas pelo monitor ao vivo
+MAX_MATCH_AGE_HOURS = 48
 
 FLASHSCORE_TENNIS_URL = "https://www.flashscore.com/tennis/"
 
@@ -42,14 +48,34 @@ async def fetch_live_scores() -> list[dict]:
                     const status = row.querySelector('[class*="event__stage"]');
                     const tournament = document.querySelector('[class*="event__title"]');
 
+                    // Extrair data/hora do jogo a partir de atributos data-* ou texto
+                    // O Flashscore usa timestamps Unix no atributo data-start-time
+                    const startTs = row.getAttribute('data-start-time')
+                        || row.querySelector('[data-start-time]')?.getAttribute('data-start-time')
+                        || null;
+
+                    // Tentar pegar a data exibida no bloco de evento (header de data)
+                    // Subir no DOM até encontrar o bloco de data do torneio
+                    let dateText = '';
+                    let el = row.previousElementSibling;
+                    for (let i = 0; i < 20 && el; i++) {
+                        if (el.className && el.className.includes('event__header')) {
+                            dateText = el.textContent.trim();
+                            break;
+                        }
+                        el = el.previousElementSibling;
+                    }
+
                     if (home && away) {
                         results.push({
                             player_a: home.textContent.trim(),
                             player_b: away.textContent.trim(),
-                            score_a: scoreHome ? scoreHome.textContent.trim() : "",
-                            score_b: scoreAway ? scoreAway.textContent.trim() : "",
-                            status: status ? status.textContent.trim() : "",
-                            tournament: tournament ? tournament.textContent.trim() : ""
+                            score_a: scoreHome ? scoreHome.textContent.trim() : '',
+                            score_b: scoreAway ? scoreAway.textContent.trim() : '',
+                            status: status ? status.textContent.trim() : '',
+                            tournament: tournament ? tournament.textContent.trim() : '',
+                            start_ts: startTs,     // timestamp Unix (segundos) ou null
+                            date_text: dateText,   // texto de data exibido (fallback)
                         });
                     }
                 });
@@ -104,8 +130,49 @@ def _resolve_full_name(abbreviated: str) -> str:
     return abbreviated
 
 
-async def check_completed_matches() -> list[dict]:
-    """Retorna apenas partidas finalizadas envolvendo atletas monitorados."""
+def _is_match_fresh(m: dict, max_hours: int = MAX_MATCH_AGE_HOURS) -> bool:
+    """
+    Verifica se a partida aconteceu dentro do limite de horas.
+
+    Fontes de data (em ordem de prioridade):
+      1. start_ts — timestamp Unix capturado do atributo data-start-time do Flashscore
+      2. date_text — texto de data exibido no cabeçalho do evento (heurística)
+      3. Sem data disponível — assume FRESCO (não descarta por precaução)
+    """
+    now = datetime.now(tz=timezone.utc)
+    cutoff = now - timedelta(hours=max_hours)
+
+    # 1. Timestamp Unix
+    start_ts = m.get("start_ts")
+    if start_ts:
+        try:
+            match_dt = datetime.fromtimestamp(int(start_ts), tz=timezone.utc)
+            fresh = match_dt >= cutoff
+            if not fresh:
+                log.debug(f"Ignorando partida antiga ({match_dt.date()}): {m.get('player_a')} vs {m.get('player_b')}")
+            return fresh
+        except (ValueError, TypeError):
+            pass
+
+    # 2. Texto de data (heurística: se contém ano diferente do atual, é velho)
+    date_text = m.get("date_text", "")
+    current_year = str(now.year)
+    if date_text:
+        # Se o texto menciona explicitamente um ano que não é o atual
+        import re
+        years_found = re.findall(r"\b(20\d{2})\b", date_text)
+        for y in years_found:
+            if y != current_year:
+                log.debug(f"Ignorando partida de {y}: {m.get('player_a')} vs {m.get('player_b')}")
+                return False
+
+    # 3. Sem informação de data — assume fresco (melhor false negative que false positive)
+    log.debug(f"Sem timestamp para '{m.get('player_a')} vs {m.get('player_b')}' — assumindo fresco")
+    return True
+
+
+async def check_completed_matches(max_age_hours: int = MAX_MATCH_AGE_HOURS) -> list[dict]:
+    """Retorna apenas partidas finalizadas nas últimas max_age_hours horas envolvendo atletas monitorados."""
     all_matches = await fetch_live_scores()
     completed = []
 
@@ -113,6 +180,11 @@ async def check_completed_matches() -> list[dict]:
         status = m.get("status", "").lower()
         is_finished = any(s in status for s in ["finished", "fim", "final", "retired", "walkover"])
         if not is_finished:
+            continue
+
+        # ✅ Filtro de frescor: ignorar partidas mais antigas que max_age_hours
+        if not _is_match_fresh(m, max_hours=max_age_hours):
+            log.info(f"Partida descartada (muito antiga): {m.get('player_a')} vs {m.get('player_b')}")
             continue
 
         player_a = m.get("player_a", "").lower()

@@ -3,40 +3,13 @@
   "slug": "jannik-sinner",
   "photos": [
     {
-      "file": "headshot_01.jpg",
-      "type": "headshot",
-      "source": "wikipedia",
-      "license": "CC (Wikipedia)",
-      "author": "Wikipedia",
-      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Jannik_Sinner_2025_US_Open.jpg/960px-Jannik_Sinner_2025_US_Open.jpg",
-      "downloaded_at": "2026-05-07"
-    },
-    {
-      "file": "any_01.jpg",
-      "type": "any",
-      "source": "wikipedia",
-      "license": "CC (Wikipedia)",
-      "author": "Wikipedia",
-      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Jannik_Sinner_2025_US_Open.jpg/960px-Jannik_Sinner_2025_US_Open.jpg",
-      "downloaded_at": "2026-05-08"
-    },
-    {
-      "file": "any_02.jpg",
-      "type": "any",
-      "source": "wikipedia",
-      "license": "CC (Wikipedia)",
-      "author": "Wikipedia",
-      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Jannik_Sinner_2025_US_Open.jpg/960px-Jannik_Sinner_2025_US_Open.jpg",
-      "downloaded_at": "2026-05-08"
-    },
-    {
-      "file": "any_03.jpg",
-      "type": "any",
-      "source": "wikipedia",
-      "license": "CC (Wikipedia)",
-      "author": "Wikipedia",
-      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Jannik_Sinner_2025_US_Open.jpg/960px-Jannik_Sinner_2025_US_Open.jpg",
-      "downloaded_at": "2026-05-08"
+      "file": "trophy_01.jpg",
+      "type": "trophy",
+      "source": "google_cc",
+      "license": "CC",
+      "author": "Tennisuptodate.com",
+      "url_original": "https://r.testifier.nl/Acbs8526SDKI/resizing_type:fit/watermark:Picture%3A%20Proshots/width:3840/height:2560/plain/https://s3-newsifier.ams3.digitaloceanspaces.com/tennisuptodate.com/images/2026-04/jannik-sinner-monte-carlo-masters-trophy-2026-69dcb388c354b.jpg@webp",
+      "downloaded_at": "2026-05-13"
     }
   ]
 }

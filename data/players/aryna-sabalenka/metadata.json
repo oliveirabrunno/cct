@@ -3,13 +3,13 @@
   "slug": "aryna-sabalenka",
   "photos": [
     {
-      "file": "headshot_01.jpg",
-      "type": "headshot",
-      "source": "wikipedia",
-      "license": "CC (Wikipedia)",
-      "author": "Wikipedia",
-      "url_original": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Aryna_Sabalenka_Miami_Open_Final.jpg/960px-Aryna_Sabalenka_Miami_Open_Final.jpg",
-      "downloaded_at": "2026-05-07"
+      "file": "trophy_01.jpg",
+      "type": "trophy",
+      "source": "google_cc",
+      "license": "CC",
+      "author": "Just Women's Sports",
+      "url_original": "https://justwomenssports.com/wp-content/smush-webp/2025/09/GettyImages-2234059295-1024x683.jpg.webp",
+      "downloaded_at": "2026-05-13"
     }
   ]
 }
