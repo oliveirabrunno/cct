@@ -1,11 +1,12 @@
-name: Ranking Semanal — Segunda 08h BRT
+name: Ranking Semanal — Segunda 09h BRT
 
-# Gera carrossel de ranking ATP/WTA toda segunda-feira às 08:00 BRT (11:00 UTC).
-# Inclui top 10 + maiores subidas/quedas + destaque Fonseca e Bia.
+# Gera carrossel de ranking ATP/WTA toda segunda-feira às 09:00 BRT (12:00 UTC).
+# 2 slides: Top 30 ATP + Top 30 WTA com badges de movimentação (↑↓ NEW).
+# Foto do destaque da semana + resumo gerado por Claude.
 
 on:
   schedule:
-    - cron: "0 11 * * 1"
+    - cron: "0 12 * * 1"   # 12:00 UTC = 09:00 BRT
   workflow_dispatch:
 
 concurrency:
@@ -63,12 +64,15 @@ jobs:
       - name: Install Playwright (chromium only)
         run: python -m playwright install chromium --with-deps
 
-      - name: Cache dados persistentes (dedup DB + fotos de jogadores)
+      # Cache principal: dedup DB + fotos + histórico de rankings (para calcular movimentação)
+      - name: Cache dados persistentes
         uses: actions/cache@v4
         with:
           path: |
             data/database.sqlite
             data/players
+            data/ranking_cache_atp.json
+            data/ranking_cache_wta.json
           key: data-cache-v2-${{ github.run_id }}
           restore-keys: data-cache-v2-
 

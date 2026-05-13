@@ -396,47 +396,61 @@ async def run_test_reel():
 
 
 async def run_ranking():
-    log.info("=== Ranking semanal ===")
+    """
+    Carrossel semanal de ranking ATP + WTA — toda segunda-feira às 09:00 BRT.
+    Gera 2 slides (1 ATP, 1 WTA) com o template ranking.html:
+      - Top 30 com badges de movimentação (↑↓ NEW)
+      - Foto do destaque da semana
+      - Resumo textual gerado por Claude
+    """
+    log.info("=== Ranking semanal (novo pipeline) ===")
     from datetime import date as _date
-    from scrapers.live_ranking import fetch_atp_live_rankings as fetch_atp_rankings
-    from scrapers.live_ranking import fetch_wta_live_rankings as fetch_wta_rankings
+    from generators.ranking_carousel import generate_ranking_carousel
+    from utils.publish_lock import acquire as lock_acquire, release as lock_release
 
-    if is_duplicate("ranking_carousel", str(_date.today()), hours=20):
+    today_str = str(_date.today())
+    if is_duplicate("ranking_carousel", today_str, hours=20):
         log.info("Ranking carousel já publicado hoje — pulando")
         return
 
-    publisher = LocalPublisher()
+    if not lock_acquire():
+        log.warning("Publish lock ativo — abortando ranking para evitar duplicação.")
+        return
 
-    atp = fetch_atp_rankings(5)
-    wta = fetch_wta_rankings(5)
+    publisher = _make_publisher()
 
-    # Encontrar brasileiros no top 100
-    brasileiros = {
-        "atp": [p for p in fetch_atp_rankings(100) if p.get("country") in ("BRA",)],
-        "wta": [p for p in fetch_wta_rankings(100) if p.get("country") in ("BRA",)],
-    }
+    try:
+        result = await generate_ranking_carousel()
 
-    data = {
-        "atp_top10": atp,
-        "wta_top10": wta,
-        "brasileiros": brasileiros,
-        "week": "Semana atual",
-        "data": str({"atp_top5": atp, "wta_top5": wta, "brasileiros": brasileiros}),
-    }
+        if not result or not result.get("image_paths"):
+            log.error("Ranking carousel não gerou imagens")
+            return
 
-    result = await generate_trend_carousel(
-        "Ranking Semanal",
-        {"type": "ranking", "week": "Semana atual"},
-        [],
-        prompt_override=data,
-        prompt_template="ranking_semanal",
-    )
+        slides = result["image_paths"]
+        caption = result["caption"]
+        hashtags = result["hashtags"]
 
-    if result and result.get("image_paths"):
-        ok = await publisher.publish_carousel(result["image_paths"], result["caption"], result["hashtags"])
+        # Resumo dos destaques no log
+        m_atp = result.get("movers_atp", {})
+        if m_atp.get("top_riser"):
+            r = m_atp["top_riser"]
+            log.info(f"Maior subida ATP: {r['name']} #{r['rank']} (+{r['change']})")
+        if m_atp.get("newbies"):
+            for p in m_atp["newbies"]:
+                log.info(f"Estreante top 30 ATP: {p['name']} #{p['rank']} 🆕")
+
+        ok = await publisher.publish_carousel(slides, caption, hashtags)
         if ok:
-            register_post("ranking_carousel", str(_date.today()), description=result["caption"][:100])
-        print(f"Ranking gerado: {len(result['image_paths'])} slides | {result['caption'][:100]}...")
+            register_post("ranking_carousel", today_str, description=caption[:100])
+            log.info(f"✅ Ranking publicado: {len(slides)} slides")
+        else:
+            log.error("Falha ao publicar ranking no Instagram")
+
+        print(f"\nSlides: {slides}")
+        print(f"Caption: {caption[:150]}...")
+
+    finally:
+        lock_release()
 
 
 async def _generate_evergreen(publisher):

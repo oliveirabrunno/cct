@@ -1,0 +1,579 @@
+<!doctype html>
+<!--
+  ============================================================
+  CAFÉ COM TÊNIS — RANKING POST (1080×1350)
+  Atualização do TOP 30 ATP / WTA pós-torneio.
+  ============================================================
+  USO (Claude Code):
+  1) Edite o JSON em <script id="ranking-data"> abaixo.
+  2) Campos principais:
+       tour        → "ATP" | "WTA"
+       surface     → "hard" | "grass" | "clay" | "neutral"
+       tournament  → nome do torneio (aparece após "Ranking atualizado pós")
+       updatedAt   → string da data — ex: "09.06.2026"
+       image       → URL da colagem/foto de atletas
+       players     → array de 30 objetos (pode ter menos, vai mostrar o que tiver)
+  3) Cada player:
+       { rank, name, country, flag, points, change }
+       change: número inteiro
+         > 0   subiu (seta verde + "+N")
+         < 0   caiu  (seta vermelha + "−N")
+         === 0 estável (traço cinza)
+         null  novo no ranking (badge "NEW" amarelo)
+  ============================================================
+-->
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Ranking · Café com Tênis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300..800&family=Geist+Mono:wght@400..700&display=swap"
+    rel="stylesheet">
+
+  <script id="ranking-data" type="application/json">
+{
+  "tour": "ATP",
+  "surface": "clay",
+  "tournament": "Roland Garros 2026",
+  "updatedAt": "09.06.2026",
+  "image": "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=1400&q=80",
+  "credit": "ATP Tour",
+  "players": [
+    { "rank":  1, "name": "Jannik Sinner",       "country": "ITA", "flag": "🇮🇹", "points": 11830, "change":  0 },
+    { "rank":  2, "name": "Carlos Alcaraz",      "country": "ESP", "flag": "🇪🇸", "points": 10240, "change":  1 },
+    { "rank":  3, "name": "Alexander Zverev",    "country": "GER", "flag": "🇩🇪", "points":  8195, "change": -1 },
+    { "rank":  4, "name": "Daniil Medvedev",     "country": "RUS", "flag": "🇷🇺", "points":  6280, "change":  0 },
+    { "rank":  5, "name": "Novak Djokovic",      "country": "SRB", "flag": "🇷🇸", "points":  5950, "change":  0 },
+    { "rank":  6, "name": "Taylor Fritz",        "country": "USA", "flag": "🇺🇸", "points":  4870, "change":  1 },
+    { "rank":  7, "name": "Casper Ruud",         "country": "NOR", "flag": "🇳🇴", "points":  4625, "change":  2 },
+    { "rank":  8, "name": "Andrey Rublev",       "country": "RUS", "flag": "🇷🇺", "points":  4390, "change": -2 },
+    { "rank":  9, "name": "Alex de Minaur",      "country": "AUS", "flag": "🇦🇺", "points":  4120, "change": -1 },
+    { "rank": 10, "name": "Lorenzo Musetti",     "country": "ITA", "flag": "🇮🇹", "points":  3845, "change":  1 },
+    { "rank": 11, "name": "Alexander Bublik",    "country": "KAZ", "flag": "🇰🇿", "points":  3690, "change": -1 },
+    { "rank": 12, "name": "Stefanos Tsitsipas",  "country": "GRE", "flag": "🇬🇷", "points":  3510, "change":  0 },
+    { "rank": 13, "name": "Grigor Dimitrov",     "country": "BUL", "flag": "🇧🇬", "points":  3340, "change":  2 },
+    { "rank": 14, "name": "Hubert Hurkacz",      "country": "POL", "flag": "🇵🇱", "points":  3210, "change": -1 },
+    { "rank": 15, "name": "Holger Rune",         "country": "DEN", "flag": "🇩🇰", "points":  3085, "change": -1 },
+    { "rank": 16, "name": "Tommy Paul",          "country": "USA", "flag": "🇺🇸", "points":  2940, "change":  3 },
+    { "rank": 17, "name": "Ben Shelton",         "country": "USA", "flag": "🇺🇸", "points":  2815, "change":  1 },
+    { "rank": 18, "name": "Karen Khachanov",     "country": "RUS", "flag": "🇷🇺", "points":  2680, "change": -2 },
+    { "rank": 19, "name": "Frances Tiafoe",      "country": "USA", "flag": "🇺🇸", "points":  2545, "change": -1 },
+    { "rank": 20, "name": "Sebastian Korda",     "country": "USA", "flag": "🇺🇸", "points":  2410, "change":  4 },
+    { "rank": 21, "name": "Ugo Humbert",         "country": "FRA", "flag": "🇫🇷", "points":  2295, "change": -1 },
+    { "rank": 22, "name": "Tomas Machac",        "country": "CZE", "flag": "🇨🇿", "points":  2180, "change":  2 },
+    { "rank": 23, "name": "Felix Auger-Aliassime","country":"CAN", "flag": "🇨🇦", "points":  2095, "change":  0 },
+    { "rank": 24, "name": "João Fonseca",        "country": "BRA", "flag": "🇧🇷", "points":  2010, "change":  5 },
+    { "rank": 25, "name": "Arthur Fils",         "country": "FRA", "flag": "🇫🇷", "points":  1945, "change": -3 },
+    { "rank": 26, "name": "Jack Draper",         "country": "GBR", "flag": "🇬🇧", "points":  1870, "change": -1 },
+    { "rank": 27, "name": "Flavio Cobolli",      "country": "ITA", "flag": "🇮🇹", "points":  1795, "change":  2 },
+    { "rank": 28, "name": "Jakub Mensik",        "country": "CZE", "flag": "🇨🇿", "points":  1720, "change": null },
+    { "rank": 29, "name": "Sebastian Baez",      "country": "ARG", "flag": "🇦🇷", "points":  1655, "change": -4 },
+    { "rank": 30, "name": "Nicolas Jarry",       "country": "CHI", "flag": "🇨🇱", "points":  1590, "change":  1 }
+  ]
+}
+</script>
+
+  <style>
+    :root {
+      --surface-primary: #1A1A1C;
+      --surface-accent: #D4B96A;
+      --surface-chip: #1A1A1C;
+      --surface-chipInk: #F4F1EA;
+      --up: #2EA84F;
+      --down: #D33A2C;
+      --flat: #8A8A8E;
+      --new: #D4B96A;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: #1a1a1c;
+      font-family: Geist, system-ui, sans-serif;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    #frame {
+      width: 1080px;
+      height: 1350px;
+      flex: 0 0 auto;
+      position: relative;
+      overflow: hidden;
+      transform-origin: center center;
+      background: #F4F1EA;
+      color: #1A1A1C;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .6);
+    }
+
+    @media (max-width: 1100px) {
+      #frame {
+        transform: scale(calc((100vw - 40px) / 1080));
+      }
+    }
+
+    @media (max-height: 1400px) {
+      #frame {
+        transform: scale(calc((100vh - 40px) / 1350));
+      }
+    }
+
+    /* ---------- TOP STRIP ---------- */
+    .top-strip {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: var(--surface-chip);
+      color: var(--surface-chipInk);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      z-index: 3;
+    }
+
+    .top-strip .left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .tour-pill {
+      background: var(--surface-accent);
+      color: #1A1A1C;
+      padding: 6px 14px 5px;
+      border-radius: 3px;
+      font-family: "Geist Mono", monospace;
+      font-size: 16px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .top-strip .label {
+      font-family: "Geist Mono", monospace;
+      font-size: 13px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      opacity: .75;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .wordmark {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--surface-chipInk);
+      font-family: "Instrument Serif", serif;
+      font-size: 20px;
+      font-style: italic;
+      line-height: 1;
+    }
+
+    .wordmark svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+    }
+
+    /* ---------- LAYOUT ---------- */
+    .main {
+      position: absolute;
+      top: 64px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+    }
+
+    .col-table {
+      width: 600px;
+      padding: 28px 28px 28px 40px;
+    }
+
+    .col-side {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #0F0F10;
+      color: #fff;
+    }
+
+    /* ---------- SIDE COLUMN (photo + title) ---------- */
+    .col-side .photo {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 560px;
+      object-fit: cover;
+      object-position: center;
+      width: 100%;
+    }
+
+    .col-side .photo-grad {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 560px;
+      background: linear-gradient(180deg, rgba(0, 0, 0, .4) 0%, rgba(0, 0, 0, 0) 30%,
+          rgba(0, 0, 0, 0) 60%, rgba(15, 15, 16, 1) 100%);
+    }
+
+    .col-side .credit {
+      position: absolute;
+      top: 528px;
+      left: 32px;
+      font-family: "Geist Mono", monospace;
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .7);
+      z-index: 2;
+    }
+
+    .col-side .title-block {
+      position: absolute;
+      top: 540px;
+      left: 32px;
+      right: 32px;
+      bottom: 120px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .col-side .stripe-h {
+      width: 56px;
+      height: 5px;
+      background: var(--surface-accent);
+      margin-bottom: 22px;
+    }
+
+    .col-side .kicker {
+      font-family: "Geist Mono", monospace;
+      color: var(--surface-accent);
+      font-size: 14px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .col-side .title {
+      font-family: "Instrument Serif", serif;
+      color: #fff;
+      font-size: 50px;
+      line-height: 1.02;
+      margin: 0 0 18px;
+      font-weight: 400;
+      letter-spacing: -.018em;
+      text-wrap: balance;
+    }
+
+    .col-side .title em {
+      color: var(--surface-accent);
+      font-style: italic;
+    }
+
+    .col-side .date {
+      font-family: "Geist Mono", monospace;
+      color: rgba(255, 255, 255, .75);
+      font-size: 13px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      margin-top: auto;
+    }
+
+    .col-side .date-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .col-side .date-row::before {
+      content: "";
+      width: 22px;
+      height: 1px;
+      background: rgba(255, 255, 255, .5);
+    }
+
+    .col-side .footer {
+      position: absolute;
+      bottom: 32px;
+      left: 32px;
+      right: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: "Geist Mono", monospace;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .55);
+    }
+
+    /* ---------- TABLE ---------- */
+    .table-head {
+      display: grid;
+      grid-template-columns: 60px 1fr 44px 76px;
+      align-items: center;
+      gap: 10px;
+      padding: 0 4px 8px;
+      border-bottom: 2px solid rgba(0, 0, 0, .18);
+      font-family: "Geist Mono", monospace;
+      font-size: 10px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: #6A6A6E;
+      font-weight: 600;
+    }
+
+    .table-head .points {
+      text-align: right;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 60px 1fr 44px 76px;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 4px;
+      border-bottom: 1px solid rgba(0, 0, 0, .08);
+      height: 28px;
+    }
+
+    .row:last-child {
+      border-bottom: 0;
+    }
+
+    /* Highlight top 3 with a tiny serif feel */
+    .row.top3 .rank-num {
+      font-family: "Geist", sans-serif;
+    }
+
+    .rank {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rank-num {
+      font-family: "Geist", sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: #1A1A1C;
+      min-width: 24px;
+      text-align: right;
+      letter-spacing: -.02em;
+      font-feature-settings: "tnum";
+    }
+
+    .change {
+      display: inline-flex;
+      align-items: center;
+      gap: 1px;
+      font-family: "Geist Mono", monospace;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0;
+      padding: 2px 4px 1px;
+      border-radius: 3px;
+      min-width: 24px;
+      justify-content: center;
+    }
+
+    .change.up {
+      color: #fff;
+      background: var(--up);
+    }
+
+    .change.down {
+      color: #fff;
+      background: var(--down);
+    }
+
+    .change.flat {
+      color: #6A6A6E;
+      background: transparent;
+    }
+
+    .change.new {
+      color: #1A1A1C;
+      background: var(--new);
+    }
+
+    .change svg {
+      width: 8px;
+      height: 8px;
+      display: block;
+    }
+
+    .name {
+      font-family: "Geist", sans-serif;
+      font-size: 18px;
+      font-weight: 500;
+      color: #1A1A1C;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: -.005em;
+    }
+
+    .name .surname {
+      font-weight: 700;
+    }
+
+    .flag {
+      font-size: 20px;
+      text-align: center;
+      line-height: 1;
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", emoji;
+    }
+
+    .points {
+      text-align: right;
+      font-family: "Geist Mono", monospace;
+      font-size: 14px;
+      color: #1A1A1C;
+      font-weight: 600;
+      font-feature-settings: "tnum";
+      letter-spacing: -.01em;
+    }
+
+    /* Subtle striping */
+    .row:nth-child(even of .row) {
+      background: rgba(0, 0, 0, .018);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="frame">
+    <div class="top-strip">
+      <div class="left">
+        <span class="tour-pill" id="tour-pill">ATP</span>
+        <span class="label">Ranking · Top 30</span>
+      </div>
+      <span class="wordmark">
+        <svg viewBox="0 0 28 28" aria-hidden="true">
+          <circle cx="14" cy="14" r="12" fill="none" stroke="currentColor" stroke-width="1.6"></circle>
+          <path d="M3 9 Q14 14 25 9" fill="none" stroke="currentColor" stroke-width="1.6"></path>
+          <path d="M3 19 Q14 14 25 19" fill="none" stroke="currentColor" stroke-width="1.6"></path>
+        </svg>
+        <span>café com tênis</span>
+      </span>
+    </div>
+
+    <div class="main">
+      <div class="col-table">
+        <div class="table-head">
+          <span>Pos.</span>
+          <span>Atleta</span>
+          <span style="text-align:center">País</span>
+          <span class="points">Pontos</span>
+        </div>
+        <div id="rows"></div>
+      </div>
+      <div class="col-side">
+        <img class="photo" id="photo" src="" alt="" />
+        <div class="photo-grad"></div>
+        <div class="credit" id="credit"></div>
+        <div class="title-block">
+          <div class="stripe-h"></div>
+          <div class="kicker" id="kicker">Ranking atualizado</div>
+          <h1 class="title">Ranking <em id="tour-em">ATP</em><br />pós <span id="tournament">torneio</span></h1>
+          <div class="date">
+            <div class="date-row"><span id="date-text">00.00.2026</span></div>
+          </div>
+        </div>
+        <div class="footer">
+          <span>Fonte: <span id="source">ATP Tour</span></span>
+          <span>@cafecomteniss</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SURFACES = {
+      hard: { primary: '#1E40AF', accent: '#3B82F6', chip: '#0B2545', chipInk: '#F5F8FF' },
+      grass: { primary: '#1F6F3C', accent: '#3DA15A', chip: '#14342B', chipInk: '#F2F8EE' },
+      clay: { primary: '#B4441C', accent: '#E76A2A', chip: '#5C1F0E', chipInk: '#FFF4EC' },
+      neutral: { primary: '#1A1A1C', accent: '#D4B96A', chip: '#1A1A1C', chipInk: '#F4F1EA' },
+    };
+
+    const ARROW_UP = `<svg viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 L7 5 L5 5 L5 7 L3 7 L3 5 L1 5 Z" fill="currentColor"/></svg>`;
+    const ARROW_DOWN = `<svg viewBox="0 0 8 8" aria-hidden="true"><path d="M4 7 L7 3 L5 3 L5 1 L3 1 L3 3 L1 3 Z" fill="currentColor"/></svg>`;
+
+    function changeBadge(change) {
+      if (change === null || change === undefined) return `<span class="change new">NEW</span>`;
+      if (change > 0) return `<span class="change up">${ARROW_UP}+${change}</span>`;
+      if (change < 0) return `<span class="change down">${ARROW_DOWN}${Math.abs(change)}</span>`;
+      return `<span class="change flat">—</span>`;
+    }
+
+    function splitName(full) {
+      // bold the surname only — last word
+      const parts = full.trim().split(/\s+/);
+      if (parts.length === 1) return `<span class="surname">${full}</span>`;
+      const surname = parts.pop();
+      return `${parts.join(' ')} <span class="surname">${surname}</span>`;
+    }
+
+    function fmtPoints(n) {
+      return new Intl.NumberFormat('pt-BR').format(n);
+    }
+
+    function render() {
+      const data = JSON.parse(document.getElementById('ranking-data').textContent);
+      const s = SURFACES[data.surface] || SURFACES.neutral;
+      const r = document.documentElement.style;
+      r.setProperty('--surface-primary', s.primary);
+      r.setProperty('--surface-accent', s.accent);
+      r.setProperty('--surface-chip', s.chip);
+      r.setProperty('--surface-chipInk', s.chipInk);
+
+      // Header pieces
+      const tour = (data.tour || 'ATP').toUpperCase();
+      document.getElementById('tour-pill').textContent = tour;
+      document.getElementById('tour-em').textContent = tour;
+      document.getElementById('tournament').textContent = data.tournament || 'torneio';
+      document.getElementById('date-text').textContent = 'atualizado em ' + (data.updatedAt || '');
+      document.getElementById('photo').src = data.image || '';
+      document.getElementById('credit').textContent = data.credit ? `Foto · ${data.credit}` : '';
+      document.getElementById('source').textContent = `${tour} Tour`;
+
+      // Rows
+      const rowsEl = document.getElementById('rows');
+      const players = (data.players || []).slice(0, 30);
+      rowsEl.innerHTML = players.map(p => `
+        <div class="row${p.rank <= 3 ? ' top3' : ''}">
+          <div class="rank">
+            <span class="rank-num">${p.rank}</span>
+            ${changeBadge(p.change)}
+          </div>
+          <div class="name">${splitName(p.name)}</div>
+          <div class="flag" title="${p.country}">${p.flag || p.country}</div>
+          <div class="points">${fmtPoints(p.points)}</div>
+        </div>
+      `).join('');
+    }
+    render();
+  </script>
+</body>
+
+</html>
