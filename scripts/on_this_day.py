@@ -124,11 +124,12 @@ async def run():
             "REGRAS:\n"
             "- headline: o dado mais impactante, máx 8 palavras, sem introdução\n"
             "- subtext: contexto histórico, máx 20 palavras\n"
-            "- player: nome completo do jogador principal\n"
+            "- player: nome completo do jogador principal (OBRIGATÓRIO — use o vencedor da partida)\n"
             "- caption: legenda (máx 80 palavras), tom de bar, CTA invisível no final\n"
             "Responda SOMENTE JSON: {\"headline\":\"\",\"subtext\":\"\",\"player\":\"\",\"caption\":\"\"}"
         )
         log.info(f"Fato encontrado: {m['year']} {m['winner']} def {m['loser']} em {m['tournament']}")
+        default_player = m["winner"]  # fallback caso Claude não retorne player
     else:
         prompt = (
             f"Hoje é {day_str}. Gere um fato histórico marcante do tênis para essa data.\n"
@@ -136,19 +137,20 @@ async def run():
             "REGRAS:\n"
             "- headline: máx 8 palavras, impactante, sem introdução\n"
             "- subtext: contexto, máx 20 palavras\n"
-            "- player: jogador principal (ou vazio se for sobre o esporte em geral)\n"
+            "- player: jogador principal (OBRIGATÓRIO — escolha o atleta mais associado ao fato)\n"
             "- caption: legenda (máx 80 palavras), tom de bar, CTA invisível\n"
             "Responda SOMENTE JSON: {\"headline\":\"\",\"subtext\":\"\",\"player\":\"\",\"caption\":\"\"}"
         )
         log.info("Sem dados Sackmann — usando Claude para gerar fato histórico")
+        default_player = "Roger Federer"  # fallback genérico
 
     raw = content_gen._call_claude(system, prompt, max_tokens=400)
     data = content_gen._parse_json_response(raw)
 
     headline = data.get("headline", f"Hoje na história. {today.strftime('%d/%m')}.")
-    subtext = data.get("subtext", "")
-    player = data.get("player", "")
-    caption = data.get("caption", headline)
+    subtext  = data.get("subtext", "")
+    player   = data.get("player", "").strip() or default_player
+    caption  = data.get("caption", headline)
 
     hashtags = [
         "#tennis", "#tenis", "#onthisday", "#historiadotenis", "#hoje",
@@ -164,15 +166,36 @@ async def run():
     }
     content_data = {
         "headline": headline,
-        "subtext": subtext,
+        "subtext":  subtext,
         "visual_note": "foto_clean",
     }
 
+    log.info(f"Gerando card para: {player} | {headline}")
     path = await generate_card_with_player("stat_card", card_data, content_data)
 
     if not path:
         log.error("Falha ao gerar card On This Day")
         return
+
+    # Garantia: não publicar se o card ficou sem imagem
+    # Verificar tamanho do arquivo (card sem imagem costuma ser < 200KB)
+    import os
+    file_size = os.path.getsize(path)
+    if file_size < 50_000:  # 50KB — suspeito de ser card vazio
+        log.warning(f"Card suspeito de estar sem imagem (tamanho: {file_size}B) — verificando...")
+        # Tentar novamente com busca explícita
+        from utils.image_manager import ImageManager
+        img_manager = ImageManager()
+        img_data = await img_manager.get_player_image(player, image_type="any")
+        if not img_data:
+            log.error(f"Sem foto para '{player}' — cancelando publicação para evitar post sem imagem")
+            return
+        log.info(f"Foto encontrada na segunda tentativa: {img_data.get('path')}")
+        # Regenerar com a foto
+        path = await generate_card_with_player("stat_card", card_data, content_data)
+        if not path:
+            log.error("Segunda tentativa de geração falhou — cancelando")
+            return
 
     if not can_publish_feed_post():
         log.warning("Quota Meta atingida — card salvo localmente")

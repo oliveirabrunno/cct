@@ -165,15 +165,29 @@ async def run_live_monitor():
     publisher = _make_publisher()
     story_gen = StoryGenerator()
 
+    MAX_MATCHES_PER_RUN = 2  # Máx publicações por run — evita burst de posts
+    published_count = 0
+
     try:
         for match in completed:
+            if published_count >= MAX_MATCHES_PER_RUN:
+                log.info(f"Limite de {MAX_MATCHES_PER_RUN} posts por run atingido — parando.")
+                break
+
             winner = match.get("winner", "")
             loser  = match.get("loser", "")
             score  = match.get("score", "")
             log.info(f"Resultado: {winner} def. {loser} {score}")
 
             # Card de resultado principal (imagem única, estilo ATP Tour)
-            await process_and_publish_match(match, publisher)
+            ok = await process_and_publish_match(match, publisher)
+            if ok:
+                published_count += 1
+                # Aguardar 30s entre publicações para evitar rate limit e duplicatas
+                if published_count < MAX_MATCHES_PER_RUN and len(completed) > 1:
+                    import asyncio as _asyncio
+                    log.info("Aguardando 30s antes do próximo post...")
+                    await _asyncio.sleep(30)
 
             # Story de breaking news complementar (dedup por partida)
             story_key = f"breaking_{winner}_{loser}".lower().replace(" ", "_")

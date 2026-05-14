@@ -31,7 +31,15 @@ DB_PATH = Path("data/database.sqlite")
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 # Cache em memória dos posts do Instagram (evita múltiplas chamadas por run)
+# Invalidado após cada publicação para garantir que o próximo dedup veja o post recém-publicado
 _ig_posts_cache: list[dict] | None = None
+
+
+def _invalidate_ig_cache() -> None:
+    """Limpa o cache de posts do IG para forçar reconsulta na próxima verificação."""
+    global _ig_posts_cache
+    _ig_posts_cache = None
+    log.debug("Cache IG invalidado")
 
 
 # ── SQLite helpers ────────────────────────────────────────────────────────────
@@ -214,6 +222,9 @@ def register_post(
             log.info(f"Post registrado: {post_type}/{player} → {h}")
         except sqlite3.IntegrityError:
             pass
+    # Invalidar cache do IG para que a próxima verificação de dedup
+    # veja o post recém-publicado (evita duplicatas na mesma run)
+    _invalidate_ig_cache()
 
 
 def register_used_image(player: str, filename: str) -> None:
