@@ -80,6 +80,7 @@ def content_hash(post_type: str, player: str, extra: str = "") -> str:
 def _fetch_ig_recent_posts(limit: int = 20) -> list[dict]:
     """
     Busca os últimos `limit` posts do feed do Instagram via Graph API.
+    Usa graph.facebook.com (necessário para tokens de PAGE — não graph.instagram.com).
     Retorna lista de dicts com caption, timestamp, id.
     """
     global _ig_posts_cache
@@ -95,8 +96,10 @@ def _fetch_ig_recent_posts(limit: int = 20) -> list[dict]:
 
     try:
         import requests
+        # IMPORTANTE: usar graph.facebook.com, não graph.instagram.com
+        # O token de PAGE não é aceito em graph.instagram.com (retorna 400)
         resp = requests.get(
-            f"https://graph.instagram.com/v22.0/{user_id}/media",
+            f"https://graph.facebook.com/v22.0/{user_id}/media",
             params={
                 "fields":       "id,caption,timestamp",
                 "limit":        limit,
