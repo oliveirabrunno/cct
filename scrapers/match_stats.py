@@ -83,17 +83,40 @@ def score_dominance(score_str: str) -> str:
 
 def search_player_recent_context(player_name: str, tournament: str) -> str:
     """
-    Busca no Google News contexto recente do jogador.
-    Retorna string com stat mais relevante encontrado.
+    Busca contexto verificado do jogador no Google News.
+    Prioriza artigos com stats/recordes para fornecer números reais ao Claude.
+    Retorna string combinando os títulos mais relevantes encontrados.
     """
     try:
         from scrapers.google_news import search_news
-        articles = search_news(f"{player_name} tennis {tournament}", hours=72)
-        if not articles:
-            articles = search_news(player_name, hours=168)  # última semana
 
-        if articles:
-            return articles[0].get("title", "")
+        # Busca 1: focada em stats e recordes do jogo específico
+        last_name = player_name.split()[-1]
+        stat_articles = search_news(
+            f"{last_name} {tournament} record streak wins 2026", hours=48
+        )
+
+        # Busca 2: contexto geral recente do jogador
+        general_articles = search_news(
+            f"{player_name} tennis {tournament}", hours=72
+        )
+        if not general_articles:
+            general_articles = search_news(player_name, hours=168)
+
+        # Combinar: até 2 títulos, priorizando stats
+        all_articles = (stat_articles or []) + (general_articles or [])
+        seen = set()
+        titles = []
+        for a in all_articles[:5]:
+            t = a.get("title", "").strip()
+            if t and t not in seen:
+                seen.add(t)
+                titles.append(t)
+            if len(titles) >= 2:
+                break
+
+        if titles:
+            return " | ".join(titles)
     except Exception:
         pass
     return ""

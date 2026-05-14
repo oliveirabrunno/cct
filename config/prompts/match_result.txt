@@ -21,13 +21,23 @@ REGRAS ABSOLUTAS DE ESCRITA:
 - Hashtags (#Tag) devem aparecer SOMENTE ao final da legenda, nunca no meio do texto
 - Não comece a legenda com o nome do jogador (o sistema injeta a menção do Instagram automaticamente)
 
+⚠️ REGRA CRÍTICA — STATS E NÚMEROS:
+- NUNCA invente ou estime estatísticas históricas (sequências de vitórias, recordes, H2H, etc.)
+- Só cite números específicos de recordes/sequências SE eles estiverem explicitamente no campo "Contexto de notícias" acima
+- Se o contexto não trouxer um número verificado, use apenas os dados fornecidos (ranking, score, dominância)
+- Exemplos de stats PROIBIDAS sem dado verificado: "X vitórias seguidas", "H2H de Y-Z", "X Grand Slams"
+- Exemplos de stats PERMITIDAS (sempre disponíveis): ranking atual, score, dominância do jogo
+
 TAREFA:
 1. Gere 1 stat impactante e curto sobre o resultado (máx 12 palavras).
-   Exemplos de boas stats:
-   - "Primeira vitória em Masters 1000 desde Cincinnati 2024"
-   - "Djokovic elimina o número 2 do mundo sem perder um set"
-   - "Maior virada do torneio — perdeu o 1º set e venceu os dois seguintes"
-   - Use os dados reais fornecidos — se não souber a stat histórica, use contexto do ranking/score
+   Fontes permitidas:
+   - Dados dos campos acima (ranking, score, dominância, label)
+   - Informações do campo "Contexto de notícias" — cite apenas o que estiver lá
+   - Se não houver stat histórica verificada: descreva o resultado pelo ranking/score
+   Exemplos de boas stats (sem inventar):
+   - "Número {winner_rank} bate número {loser_rank} em {dominance} jogo"
+   - "Vitória convincente de {winner} sobre o top {loser_rank} do mundo"
+   - Só use "X vitórias seguidas" se esse número aparecer no contexto de notícias
 
 2. Gere a legenda do post Instagram (máx 120 palavras):
    - Primeira linha: fato mais impactante (para o scroll) — pode mencionar o jogador pelo sobrenome
@@ -36,6 +46,7 @@ TAREFA:
    - Se for upset: celebrar o vencedor, não humilhar o perdedor
    - Terminar com pergunta ou CTA curto + @cafecomteniss
    - Hashtags relevantes ao FINAL (5-8 tags) — somente após o texto principal
+   - NUNCA cite números de recordes/sequências que não estejam no contexto fornecido
 
 OUTPUT JSON (APENAS o JSON):
 {
