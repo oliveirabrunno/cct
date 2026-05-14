@@ -73,7 +73,8 @@ jobs:
             data/players
             data/ranking_cache_atp.json
             data/ranking_cache_wta.json
-          key: data-cache-v2-${{ github.run_id }}
+          key: data-cache-v3-${{ github.run_id }}
+          restore-keys: data-cache-v3-
           restore-keys: data-cache-v2-
 
       - name: Atualizar dados Sackmann

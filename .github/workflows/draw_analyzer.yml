@@ -76,8 +76,8 @@ jobs:
           path: |
             data/database.sqlite
             data/players
-          key: data-cache-v2-${{ github.run_id }}
-          restore-keys: data-cache-v2-
+          key: data-cache-v3-${{ github.run_id }}
+          restore-keys: data-cache-v3-
 
       - name: Gerar carrosséis de chaveamento
         env:

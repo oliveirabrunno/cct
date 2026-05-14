@@ -1,9 +1,24 @@
 """
-Deduplicação de posts via SQLite.
-Evita publicar o mesmo conteúdo duas vezes nas últimas 72h.
+Deduplicação de posts — 3 camadas de proteção contra postagens duplicadas/antigas.
+
+Camada 1 — SQLite local (database.sqlite):
+  Rápido, funciona offline. Persiste entre runs via GitHub Actions cache.
+  PROBLEMA: o cache Actions pode ser restaurado de uma versão antiga → falso negativo.
+
+Camada 2 — Instagram Graph API (últimos N posts):
+  Busca os últimos 20 posts do feed real para verificar se o tema já foi postado.
+  Funciona mesmo quando o cache local está desatualizado ou vazio.
+  Compara keywords do jogador/tema na legenda dos posts.
+
+Camada 3 — Dedup de conteúdo por hash (content_hash):
+  Hash SHA-256 do post_type + player + extra. Evita re-post exato.
+
+Freshness guard (em flashscore.py e match_result_card.py):
+  Rejeita partidas com mais de 48h, independente do dedup.
 """
 
 import hashlib
+import os
 import sqlite3
 import unicodedata
 from datetime import datetime, timedelta
@@ -15,6 +30,11 @@ log = get_logger(__name__)
 DB_PATH = Path("data/database.sqlite")
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+# Cache em memória dos posts do Instagram (evita múltiplas chamadas por run)
+_ig_posts_cache: list[dict] | None = None
+
+
+# ── SQLite helpers ────────────────────────────────────────────────────────────
 
 def _get_conn() -> sqlite3.Connection:
     conn = sqlite3.connect(str(DB_PATH))
@@ -55,8 +75,100 @@ def content_hash(post_type: str, player: str, extra: str = "") -> str:
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
-def is_duplicate(post_type: str, player: str, extra: str = "", hours: int = 72) -> bool:
-    h = content_hash(post_type, player, extra)
+# ── Camada 2: Instagram Graph API ────────────────────────────────────────────
+
+def _fetch_ig_recent_posts(limit: int = 20) -> list[dict]:
+    """
+    Busca os últimos `limit` posts do feed do Instagram via Graph API.
+    Retorna lista de dicts com caption, timestamp, id.
+    """
+    global _ig_posts_cache
+    if _ig_posts_cache is not None:
+        return _ig_posts_cache
+
+    token   = os.environ.get("META_ACCESS_TOKEN", "")
+    user_id = os.environ.get("META_IG_USER_ID", "")
+    if not token or not user_id:
+        log.debug("IG Graph API não configurada — dedup de API desabilitado")
+        _ig_posts_cache = []
+        return []
+
+    try:
+        import requests
+        resp = requests.get(
+            f"https://graph.instagram.com/v22.0/{user_id}/media",
+            params={
+                "fields":       "id,caption,timestamp",
+                "limit":        limit,
+                "access_token": token,
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json().get("data", [])
+        _ig_posts_cache = data
+        log.info(f"IG dedup: {len(data)} posts recentes carregados via Graph API")
+        return data
+    except Exception as e:
+        log.warning(f"IG Graph API falhou para dedup: {e}")
+        _ig_posts_cache = []
+        return []
+
+
+def _ig_has_recent_post(player: str, hours: int = 24) -> bool:
+    """
+    Verifica se o feed do Instagram já tem um post sobre este jogador/tema
+    nas últimas `hours` horas.
+    Compara keywords do nome do jogador com as legendas.
+    """
+    posts = _fetch_ig_recent_posts()
+    if not posts:
+        return False
+
+    # Keywords a buscar: partes do nome do jogador
+    keywords = [w.lower() for w in player.split() if len(w) > 3]
+    cutoff   = datetime.utcnow() - timedelta(hours=hours)
+
+    for post in posts:
+        # Verificar data
+        ts_str = post.get("timestamp", "")
+        try:
+            from datetime import timezone
+            ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+            ts = ts.replace(tzinfo=None)  # comparar naive
+            if ts < cutoff:
+                continue  # post mais antigo que o limite
+        except Exception:
+            continue
+
+        caption = _normalize_string(post.get("caption", ""))
+        if any(kw in caption for kw in keywords):
+            log.info(
+                f"IG dedup: '{player}' encontrado em post recente "
+                f"({post.get('id')}, {ts_str[:10]})"
+            )
+            return True
+
+    return False
+
+
+# ── API pública ───────────────────────────────────────────────────────────────
+
+def is_duplicate(
+    post_type: str,
+    player: str,
+    extra: str = "",
+    hours: int = 72,
+    check_ig: bool = True,
+) -> bool:
+    """
+    Verifica se já existe um post idêntico/similar recente.
+
+    Camada 1: SQLite local (hash exato)
+    Camada 2: Instagram Graph API (keywords do jogador nos últimos posts)
+    """
+    # Camada 1 — SQLite
+    h      = content_hash(post_type, player, extra)
     cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
 
     with _get_conn() as conn:
@@ -66,8 +178,17 @@ def is_duplicate(post_type: str, player: str, extra: str = "", hours: int = 72) 
         ).fetchone()
 
     if row:
-        log.info(f"Duplicado detectado: {post_type}/{player} (hash {h})")
+        log.info(f"Duplicado detectado (SQLite): {post_type}/{player} (hash {h})")
         return True
+
+    # Camada 2 — Instagram Graph API
+    if check_ig and player and player.lower() not in ("test player", ""):
+        # Para match_result: checagem mais curta (24h); demais: igual ao hours
+        ig_hours = min(hours, 24) if post_type == "match_result" else min(hours, 48)
+        if _ig_has_recent_post(player, hours=ig_hours):
+            log.info(f"Duplicado detectado (IG API): {post_type}/{player}")
+            return True
+
     return False
 
 
@@ -111,7 +232,6 @@ def register_used_image(player: str, filename: str) -> None:
 def get_used_image_filenames(player: str, hours: int = 168) -> set[str]:
     """Retorna filenames de imagens usadas nas últimas `hours` horas para este jogador."""
     norm_player = _normalize_string(player)
-    prefix = f"{norm_player}::"
     cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
     with _get_conn() as conn:
         rows = conn.execute(
@@ -122,7 +242,7 @@ def get_used_image_filenames(player: str, hours: int = 168) -> set[str]:
 
 
 def is_duplicate_image_url(url: str, hours: int = 168) -> bool:
-    """Retorna True se esta URL de imagem foi usada nos últimos `hours` horas (padrão: 7 dias)."""
+    """Retorna True se esta URL de imagem foi usada nos últimos `hours` horas."""
     h = hashlib.sha256(url.encode()).hexdigest()[:16]
     cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
     with _get_conn() as conn:
