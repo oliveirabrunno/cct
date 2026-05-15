@@ -101,11 +101,14 @@ async def run_daily_pipeline():
         player = trend["player"]
         news   = trend.get("news", [])
 
-        if is_duplicate("trend_carousel", player):
-            log.info(f"Pulando {player} — publicado recentemente (cache local)")
+        # Dedup multi-camada via SQLite + IG Graph API (check_ig=True)
+        if is_duplicate("trend_carousel", player, hours=48, check_ig=True):
+            log.info(f"Pulando {player} — publicado recentemente")
             continue
-        if hasattr(publisher, "is_duplicate_in_ig") and publisher.is_duplicate_in_ig([player], hours=48):
-            log.info(f"Pulando {player} — publicado recentemente (Graph API)")
+        # Verificação cruzada: bloqueia se o jogador apareceu em qualquer post nas últimas 6h
+        from utils.dedup import _ig_has_recent_post
+        if _ig_has_recent_post(player, hours=6):
+            log.info(f"Pulando {player} — apareceu no feed nas últimas 6h")
             continue
 
         log.info(f"Gerando carrossel + story + reel para {player}...")
@@ -337,8 +340,13 @@ async def run_afternoon_insight():
         return
 
     publisher = _make_publisher()
-    if hasattr(publisher, "is_duplicate_in_ig") and publisher.is_duplicate_in_ig([player], hours=18):
-        log.warning(f"{player} já apareceu nas últimas 18h — skip insight")
+    # Dedup cruzado: bloquear se o jogador aparecer no feed nas últimas 6h (qualquer tipo de post)
+    if is_duplicate("afternoon_insight", player, hours=12, check_ig=True):
+        log.warning(f"{player} já apareceu num post recente — skip insight")
+        return
+    from utils.dedup import _ig_has_recent_post
+    if _ig_has_recent_post(player, hours=6):
+        log.warning(f"{player} apareceu no feed nas últimas 6h — skip insight")
         return
 
     hashtags      = re.findall(r"#\w+", caption)
@@ -347,6 +355,7 @@ async def run_afternoon_insight():
     ok = await publisher.publish_post(path, caption_clean, hashtags)
     if ok:
         register_post("afternoon_insight", player, description=stat_data["headline"])
+
 
 
 
@@ -531,11 +540,16 @@ async def run_stat_card():
 
     publisher = _make_publisher()
 
-    if is_duplicate("stat_card", player, hours=18):
-        log.info(f"Stat card para {player} já publicado hoje — pulando (cache local)")
+    # Dedup multi-camada: bloqueia se o jogador apareceu em QUALQUER post recente (18h)
+    # check_ig=True busca na Graph API, eliminando o problema de cache esvaziado entre runs
+    if is_duplicate("stat_card", player, hours=18, check_ig=True):
+        log.info(f"Stat card para {player} já publicado hoje — pulando")
         return
-    if hasattr(publisher, "is_duplicate_in_ig") and publisher.is_duplicate_in_ig([player], hours=18):
-        log.info(f"Stat card para {player} já publicado hoje — pulando (Graph API)")
+    # Verificação cruzada: bloquear se o jogador estava num resultado ao vivo nas últimas 4h
+    # (evita burst: live_monitor + stat_card para o mesmo atleta no mesmo dia)
+    from utils.dedup import _ig_has_recent_post
+    if _ig_has_recent_post(player, hours=4):
+        log.info(f"Stat card para {player} bloqueado — jogador apareceu no feed nas últimas 4h")
         return
 
     path = await generate_card_with_player(
@@ -684,12 +698,8 @@ async def run_publish_match():
     publisher = _make_publisher()
 
     match_key = f"{winner}_{loser}_{score}".lower().replace(" ", "_")
-    if is_duplicate("match_result", match_key, hours=12):
-        log.info(f"Resultado {winner} vs {loser} já publicado — pulando (cache local)")
-        print("Resultado já publicado recentemente.")
-        return
-    if hasattr(publisher, "is_duplicate_in_ig") and publisher.is_duplicate_in_ig([winner, loser], hours=12):
-        log.info(f"Resultado {winner} vs {loser} já publicado — pulando (Graph API)")
+    if is_duplicate("match_result", match_key, hours=12, check_ig=True):
+        log.info(f"Resultado {winner} vs {loser} já publicado — pulando")
         print("Resultado já publicado recentemente.")
         return
 
