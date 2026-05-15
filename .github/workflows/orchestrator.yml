@@ -15,7 +15,7 @@ on:
         default: "daily"
 
 concurrency:
-  group: orchestrator-daily
+  group: publish-queue
   cancel-in-progress: false
 
 jobs:

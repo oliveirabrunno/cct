@@ -164,19 +164,46 @@ async def generate_post(
     img_manager = ImageManager()
     
     player_query = post_data.get("player_image_query") or data.get("player") or data.get("winner") or ""
+    loser_query = data.get("loser") or ""
+    surface = post_data.get("surface", "")
+    tournament = data.get("tournament", "")
+
+    # Montar override explícito caso tenhamos a superfície
+    # (ajuda o Google Images a priorizar fotos da temporada/piso correto)
+    search_override = None
+    if surface and surface != "neutral":
+        search_override = f"{player_query} tennis {tournament} {surface} 2026"
+
+    img_data = None
     if player_query:
         img_data = await img_manager.get_player_image(
             player_query, 
             image_type="any", 
-            tournament_name=data.get("tournament", "")
+            tournament_name=tournament,
+            search_override=search_override
         )
-        if img_data and img_data.get("path"):
-            post_data["image"] = _image_to_base64(img_data['path'])
-            post_data["credit"] = img_data.get("credit_text", "")
-        else:
-            log.warning(f"Sem foto para {player_query}, card pode ficar vazio.")
-            post_data["image"] = ""
+
+    # Fallback: tentar foto do adversário se a foto principal falhar
+    if (not img_data or not img_data.get("path")) and loser_query:
+        log.warning(f"Sem foto inédita para {player_query}. Tentando adversário: {loser_query}")
+        loser_override = None
+        if surface and surface != "neutral":
+            loser_override = f"{loser_query} tennis {tournament} {surface} 2026"
             
+        img_data = await img_manager.get_player_image(
+            loser_query,
+            image_type="any",
+            tournament_name=tournament,
+            search_override=loser_override
+        )
+
+    if img_data and img_data.get("path"):
+        post_data["image"] = _image_to_base64(img_data['path'])
+        post_data["credit"] = img_data.get("credit_text", "")
+    else:
+        log.warning(f"Sem foto para {player_query} e sem fallback. Card pode ficar vazio.")
+        post_data["image"] = ""
+
     # Selecionar template: insight.html para scout/h2h com stats, post.html para o resto
     use_insight_template = (
         post_type in ("scout", "insight", "h2h")

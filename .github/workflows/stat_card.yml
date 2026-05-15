@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: stat-card
+  group: publish-queue
   cancel-in-progress: false
 
 jobs:

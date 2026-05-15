@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: stories
+  group: publish-queue
   cancel-in-progress: false
 
 jobs:
