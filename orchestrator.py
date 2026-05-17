@@ -49,7 +49,7 @@ from generators.story import StoryGenerator
 from generators.tts import generate_tts
 from generators.reel import generate_reel_from_carousel, generate_quick_reel
 from publisher.local_publisher import LocalPublisher
-from utils.dedup import is_duplicate, register_post
+from utils.dedup import is_duplicate, register_post, player_posted_recently
 from utils.logger import get_logger
 from utils.image_manager import ImageManager
 
@@ -101,14 +101,13 @@ async def run_daily_pipeline():
         player = trend["player"]
         news   = trend.get("news", [])
 
-        # Dedup multi-camada via SQLite + IG Graph API (check_ig=True)
-        if is_duplicate("trend_carousel", player, hours=48, check_ig=True):
-            log.info(f"Pulando {player} — publicado recentemente")
+        # Gate universal: bloqueia se o jogador apareceu em QUALQUER post nas últimas 6h
+        if player_posted_recently(player, hours=6):
+            log.info(f"Pulando {player} — apareceu em post recente (gate universal)")
             continue
-        # Verificação cruzada: bloqueia se o jogador apareceu em qualquer post nas últimas 6h
-        from utils.dedup import _ig_has_recent_post
-        if _ig_has_recent_post(player, hours=6):
-            log.info(f"Pulando {player} — apareceu no feed nas últimas 6h")
+        # Dedup por tipo: bloqueia trend_carousel duplicado nas últimas 48h
+        if is_duplicate("trend_carousel", player, hours=48, check_ig=True):
+            log.info(f"Pulando {player} — trend_carousel publicado recentemente")
             continue
 
         log.info(f"Gerando carrossel + story + reel para {player}...")
@@ -340,13 +339,13 @@ async def run_afternoon_insight():
         return
 
     publisher = _make_publisher()
-    # Dedup cruzado: bloquear se o jogador aparecer no feed nas últimas 6h (qualquer tipo de post)
-    if is_duplicate("afternoon_insight", player, hours=12, check_ig=True):
-        log.warning(f"{player} já apareceu num post recente — skip insight")
+    # Gate universal: bloqueia se o jogador apareceu em QUALQUER post nas últimas 6h
+    if player_posted_recently(player, hours=6):
+        log.warning(f"{player} em post recente — skip insight (gate universal)")
         return
-    from utils.dedup import _ig_has_recent_post
-    if _ig_has_recent_post(player, hours=6):
-        log.warning(f"{player} apareceu no feed nas últimas 6h — skip insight")
+    # Dedup por tipo
+    if is_duplicate("afternoon_insight", player, hours=12, check_ig=True):
+        log.warning(f"{player} já apareceu num insight recente — skip")
         return
 
     hashtags      = re.findall(r"#\w+", caption)
@@ -540,16 +539,13 @@ async def run_stat_card():
 
     publisher = _make_publisher()
 
-    # Dedup multi-camada: bloqueia se o jogador apareceu em QUALQUER post recente (18h)
-    # check_ig=True busca na Graph API, eliminando o problema de cache esvaziado entre runs
+    # Gate universal: bloqueia se o jogador apareceu em QUALQUER post nas últimas 4h
+    if player_posted_recently(player, hours=4):
+        log.info(f"Stat card para {player} bloqueado — jogador em post recente (gate universal)")
+        return
+    # Dedup por tipo: bloqueia stat_card duplicado nas últimas 18h
     if is_duplicate("stat_card", player, hours=18, check_ig=True):
         log.info(f"Stat card para {player} já publicado hoje — pulando")
-        return
-    # Verificação cruzada: bloquear se o jogador estava num resultado ao vivo nas últimas 4h
-    # (evita burst: live_monitor + stat_card para o mesmo atleta no mesmo dia)
-    from utils.dedup import _ig_has_recent_post
-    if _ig_has_recent_post(player, hours=4):
-        log.info(f"Stat card para {player} bloqueado — jogador apareceu no feed nas últimas 4h")
         return
 
     path = await generate_card_with_player(
@@ -693,11 +689,17 @@ async def run_publish_match():
 
     from scrapers.match_stats import build_match_context
     from generators.match_result_card import generate_match_result_card
-    from utils.dedup import is_duplicate, register_post
+    from utils.dedup import is_duplicate, register_post, player_posted_recently
 
     publisher = _make_publisher()
 
-    match_key = f"{winner}_{loser}_{score}".lower().replace(" ", "_")
+    # Gate universal
+    if player_posted_recently(winner, hours=4):
+        log.info(f"Resultado bloqueado — {winner} em post recente (gate universal)")
+        print(f"{winner} apareceu em post recente. Use --force para forçar.")
+        return
+
+    match_key = f"{winner}_{loser}_{score}_{tournament}".lower().replace(" ", "_")
     if is_duplicate("match_result", match_key, hours=12, check_ig=True):
         log.info(f"Resultado {winner} vs {loser} já publicado — pulando")
         print("Resultado já publicado recentemente.")

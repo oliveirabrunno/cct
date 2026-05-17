@@ -236,12 +236,13 @@ async def process_and_publish_match(match: dict, publisher) -> bool:
     match: dict com winner, loser, score, tournament, round (de check_completed_matches)
     """
     from scrapers.match_stats import build_match_context
-    from utils.dedup import is_duplicate, register_post
+    from utils.dedup import is_duplicate, register_post, player_posted_recently
     from datetime import datetime, timedelta, timezone
 
     winner = match.get("winner", "")
     loser  = match.get("loser", "")
     score  = match.get("score", "")
+    tournament = match.get("tournament", "")
 
     # 2ª camada de frescor: rejeitar partidas com timestamp > 48h
     # (1ª camada está no flashscore.py, esta é a salvaguarda final)
@@ -261,9 +262,15 @@ async def process_and_publish_match(match: dict, publisher) -> bool:
         except Exception:
             pass  # Sem timestamp válido: deixar passar (flashscore já filtrou)
 
+    # Gate universal: bloqueia se o vencedor apareceu em QUALQUER post recente
+    if player_posted_recently(winner, hours=4):
+        log.info(f"Resultado bloqueado — {winner} apareceu em post recente (gate universal)")
+        return False
+
     # Dedup: não publicar o mesmo jogo duas vezes
-    match_key = f"{winner}_{loser}_{score}".lower().replace(" ", "_")
-    if is_duplicate("match_result", match_key, hours=12):
+    # Incluir tournament para distinguir rematches em torneios diferentes
+    match_key = f"{winner}_{loser}_{score}_{tournament}".lower().replace(" ", "_")
+    if is_duplicate("match_result", match_key, hours=12, check_ig=True):
         log.info(f"Resultado duplicado, pulando: {winner} vs {loser}")
         return False
 

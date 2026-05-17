@@ -79,6 +79,10 @@ def _normalize_string(s: str) -> str:
 
 
 def content_hash(post_type: str, player: str, extra: str = "") -> str:
+    # Quando extra está vazio, incluir a hora atual para distinguir posts
+    # do mesmo tipo/jogador em momentos diferentes (evita INSERT OR IGNORE silencioso)
+    if not extra:
+        extra = datetime.now().strftime("%Y-%m-%d-%H")
     raw = f"{_normalize_string(post_type)}:{_normalize_string(player)}:{_normalize_string(extra)}"
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
@@ -165,6 +169,41 @@ def _ig_has_recent_post(player: str, hours: int = 24) -> bool:
 
 # ── API pública ───────────────────────────────────────────────────────────────
 
+def player_posted_recently(player: str, hours: int = 6) -> bool:
+    """
+    Gate universal: verifica se QUALQUER post (de qualquer tipo) sobre este
+    jogador foi publicado nas últimas N horas. Usa SQLite + IG Graph API.
+    Deve ser chamado ANTES de is_duplicate() como primeira barreira.
+    """
+    if not player or player.lower() in ("test player", ""):
+        return False
+
+    norm = _normalize_string(player)
+    cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
+
+    with _get_conn() as conn:
+        row = conn.execute(
+            "SELECT id, post_type, published_at FROM posts "
+            "WHERE player = ? AND published_at > ? "
+            "ORDER BY published_at DESC LIMIT 1",
+            (norm, cutoff)
+        ).fetchone()
+
+    if row:
+        log.info(
+            f"⛔ Jogador bloqueado (universal): {player} tem post '{row[1]}' "
+            f"de {row[2][:16]} (últimas {hours}h)"
+        )
+        return True
+
+    # Fallback: verificar na IG API
+    if _ig_has_recent_post(player, hours=hours):
+        log.info(f"⛔ Jogador bloqueado (IG API universal): {player} nas últimas {hours}h")
+        return True
+
+    return False
+
+
 def is_duplicate(
     post_type: str,
     player: str,
@@ -175,21 +214,26 @@ def is_duplicate(
     """
     Verifica se já existe um post idêntico/similar recente.
 
-    Camada 1: SQLite local (hash exato)
+    Camada 1: SQLite local — busca por tipo + jogador (não apenas hash exato)
     Camada 2: Instagram Graph API (keywords do jogador nos últimos posts)
     """
-    # Camada 1 — SQLite
-    h      = content_hash(post_type, player, extra)
+    # Camada 1 — SQLite: busca por post_type + player (mais confiável que hash)
+    norm_player = _normalize_string(player)
     cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
 
     with _get_conn() as conn:
         row = conn.execute(
-            "SELECT id FROM posts WHERE content_hash = ? AND published_at > ?",
-            (h, cutoff)
+            "SELECT id, description FROM posts "
+            "WHERE post_type = ? AND player = ? AND published_at > ? "
+            "ORDER BY published_at DESC LIMIT 1",
+            (post_type, norm_player, cutoff)
         ).fetchone()
 
     if row:
-        log.info(f"Duplicado detectado (SQLite): {post_type}/{player} (hash {h})")
+        log.info(
+            f"Duplicado detectado (SQLite): {post_type}/{player} "
+            f"(desc: {(row[1] or '')[:50]})"
+        )
         return True
 
     # Camada 2 — Instagram Graph API
@@ -210,18 +254,29 @@ def register_post(
     ig_post_id: str = "",
     description: str = "",
 ) -> None:
+    # Normalizar o nome do jogador para garantir consistência nas buscas
+    norm_player = _normalize_string(player)
     h = content_hash(post_type, player, extra)
+    now_iso = datetime.now().isoformat()
     with _get_conn() as conn:
         try:
+            # INSERT sem IGNORE — queremos SEMPRE registrar novos posts
+            # (o content_hash agora inclui hora, então colisões são raras)
             conn.execute(
-                "INSERT OR IGNORE INTO posts (content_hash, post_type, player, description, published_at, ig_post_id) "
+                "INSERT INTO posts (content_hash, post_type, player, description, published_at, ig_post_id) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
-                (h, post_type, player, description, datetime.now().isoformat(), ig_post_id)
+                (h, post_type, norm_player, description, now_iso, ig_post_id)
             )
             conn.commit()
-            log.info(f"Post registrado: {post_type}/{player} → {h}")
+            log.info(f"Post registrado: {post_type}/{norm_player} → {h} @ {now_iso[:16]}")
         except sqlite3.IntegrityError:
-            pass
+            # Hash colision (raro com hora no hash) — atualizar timestamp
+            conn.execute(
+                "UPDATE posts SET published_at = ?, description = ? WHERE content_hash = ?",
+                (now_iso, description, h)
+            )
+            conn.commit()
+            log.info(f"Post atualizado (hash existente): {post_type}/{norm_player} → {h}")
     # Invalidar cache do IG para que a próxima verificação de dedup
     # veja o post recém-publicado (evita duplicatas na mesma run)
     _invalidate_ig_cache()

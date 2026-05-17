@@ -145,7 +145,10 @@ class LocalImageCache:
         player_dir.mkdir(parents=True, exist_ok=True)
 
         existing = self._count_files(player_dir, image_type)
-        filename = f"{image_type}_{existing + 1:02d}.jpg"
+        # Usar timestamp para evitar colisões de filename entre runs do GitHub Actions
+        import time as _time
+        ts = int(_time.time())
+        filename = f"{image_type}_{ts}_{existing + 1:02d}.jpg"
         file_path = player_dir / filename
 
         url = photo_info.get("url")

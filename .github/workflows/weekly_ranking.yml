@@ -65,6 +65,10 @@ jobs:
         run: python -m playwright install chromium --with-deps
 
       # Cache principal: dedup DB + fotos + histórico de rankings (para calcular movimentação)
+      - name: Get current date
+        id: get-date
+        run: echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
       - name: Cache dados persistentes
         uses: actions/cache@v4
         with:
@@ -73,9 +77,8 @@ jobs:
             data/players
             data/ranking_cache_atp.json
             data/ranking_cache_wta.json
-          key: data-cache-v3-${{ github.run_id }}
-          restore-keys: data-cache-v3-
-          restore-keys: data-cache-v2-
+          key: data-cache-v4-${{ steps.get-date.outputs.date }}
+          restore-keys: data-cache-v4-
 
       - name: Atualizar dados Sackmann
         run: python scripts/update_sackmann.py

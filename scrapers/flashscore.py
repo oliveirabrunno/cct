@@ -175,6 +175,7 @@ async def check_completed_matches(max_age_hours: int = MAX_MATCH_AGE_HOURS) -> l
     """Retorna apenas partidas finalizadas nas últimas max_age_hours horas envolvendo atletas monitorados."""
     all_matches = await fetch_live_scores()
     completed = []
+    seen_matches: set[str] = set()  # Dedup interno: evitar retornar o mesmo jogo 2x
 
     for m in all_matches:
         status = m.get("status", "").lower()
@@ -189,6 +190,13 @@ async def check_completed_matches(max_age_hours: int = MAX_MATCH_AGE_HOURS) -> l
 
         player_a = m.get("player_a", "").lower()
         player_b = m.get("player_b", "").lower()
+
+        # Dedup interno: mesmo par de jogadores = mesmo jogo
+        pair_key = "_".join(sorted([player_a, player_b]))
+        if pair_key in seen_matches:
+            log.debug(f"Partida duplicada no Flashscore (mesmo par), ignorando: {player_a} vs {player_b}")
+            continue
+        seen_matches.add(pair_key)
 
         is_monitored = any(
             p in player_a or p in player_b

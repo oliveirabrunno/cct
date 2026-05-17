@@ -53,21 +53,13 @@ class ImageManager:
         if not download_if_missing:
             return self._get_placeholder(player_name)
 
-        # 2. Restore do metadata — re-baixa foto do url_original quando arquivo
-        #    não existe em disco (típico após cache miss no GitHub Actions).
-        #    Executa ANTES do Flickr para evitar requests desnecessários.
-        restored = await self.cache.try_restore_from_metadata(
-            player_name, image_type, exclude_filenames=set(used_files)
-        )
-        if restored:
-            self._used_paths.add(restored["path"])
-            try:
-                register_used_image(player_name, restored["filename"])
-            except Exception:
-                pass
-            return restored
+        # ⚠️ try_restore_from_metadata DESABILITADO — causava reciclagem de fotos antigas.
+        # Quando o cache local está vazio (GitHub Actions cache miss), a função re-baixava
+        # a MESMA foto do url_original do metadata.json, resultando em imagens repetidas
+        # no feed (ex: mesma foto do Sinner com troféu em 4 posts diferentes).
+        # Agora vamos direto para fontes online para garantir imagens frescas.
 
-        # 3. Google Images (via SerpAPI) — fonte primária para pegar fotos do saibro/temporada atual
+        # 2. Google Images (via SerpAPI) — fonte primária para pegar fotos do saibro/temporada atual
         result = await self._try_google_images(
             player_name, image_type,
             tournament_name=tournament_name,
