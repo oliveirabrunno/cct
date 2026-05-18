@@ -14,10 +14,15 @@ def _image_to_base64(filepath: str) -> str:
     path = Path(filepath)
     if not path.exists():
         return ""
+    if path.stat().st_size < 5000:  # < 5KB = corrompida/bloqueada/vazia
+        log.warning(f"Arquivo de imagem suspeito ({path.stat().st_size}B) — ignorando: {path.name}")
+        return ""
     ext = path.suffix.lower().strip('.')
     mime = "image/png" if ext == "png" else ("image/webp" if ext == "webp" else "image/jpeg")
     with open(path, "rb") as f:
         b64_str = base64.b64encode(f.read()).decode("utf-8")
+    if not b64_str:
+        return ""
     return f"data:{mime};base64,{b64_str}"
 
 SCREENSHOT_JS = Path(__file__).parent / "screenshot.js"
@@ -203,18 +208,24 @@ async def generate_post(
         )
 
     if img_data and img_data.get("path"):
-        post_data["image"] = _image_to_base64(img_data['path'])
-        post_data["credit"] = img_data.get("credit_text", "")
-    elif not post_data.get("image"):
-        # Sem foto do jogador E sem imagem alternativa (ex: chart) → abortar
+        b64 = _image_to_base64(img_data["path"])
+        if b64:
+            post_data["image"] = b64
+            post_data["credit"] = img_data.get("credit_text", "")
+        else:
+            log.warning(f"Imagem de '{player_query}' inválida/corrompida ({img_data['path']}) — descartando")
+        # se b64 vazio: NÃO sobrescreve post_data["image"] — preserva chart alternativo
+
+    # Verificação final: sem nenhuma imagem válida → abortar
+    if not post_data.get("image"):
         log.error(
-            f"Sem foto para '{player_query}' e sem imagem alternativa — abortando card "
+            f"Sem imagem válida para '{player_query}' — abortando card "
             "(regra: nunca publicar sem imagem)"
         )
         return None
-    else:
-        # Já há uma imagem no post_data (ex: chart de insight) — usar ela
-        log.warning(f"Sem foto para '{player_query}' — usando imagem alternativa já presente no card")
+
+    if not (img_data and img_data.get("path") and post_data.get("image", "").startswith("data:")):
+        log.warning(f"Sem foto do jogador '{player_query}' — usando imagem alternativa presente no card")
 
     # Selecionar template: insight.html para scout/h2h com stats, post.html para o resto
     use_insight_template = (

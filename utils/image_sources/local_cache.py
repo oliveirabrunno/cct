@@ -165,8 +165,11 @@ class LocalImageCache:
                 resp.raise_for_status()
                 content_type = resp.headers.get("Content-Type", "")
                 if not content_type.startswith("image/"):
-                    raise ValueError(f"URL retornou {content_type} em vez de imagem (provável bloqueio de WAF/Cloudflare)")
+                    raise ValueError(f"URL retornou {content_type} em vez de imagem (WAF/bloqueio)")
                 content = await resp.read()
+
+        if len(content) < 5000:
+            raise ValueError(f"Imagem muito pequena ({len(content)}B) — provavelmente erro ou placeholder")
 
         async with aiofiles.open(file_path, "wb") as f:
             await f.write(content)

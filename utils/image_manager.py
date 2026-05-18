@@ -200,10 +200,14 @@ class ImageManager:
         return None
 
     async def _try_wikipedia_profile(self, player_name: str, image_type: str) -> dict | None:
-        from utils.dedup import register_used_image
+        from utils.dedup import is_duplicate_image_url, register_image_url, register_used_image
         try:
             photo = get_profile_photo(player_name)
             if not photo:
+                return None
+            url = photo.get("url", "")
+            if url and is_duplicate_image_url(url, hours=72):
+                log.debug(f"Wikipedia URL já usada recentemente (dedup 72h): {player_name}")
                 return None
             local_path = await self.cache.download_and_save(player_name, photo, image_type)
             if local_path not in self._used_paths:
@@ -211,6 +215,8 @@ class ImageManager:
                 fname = local_path.split("/")[-1]
                 try:
                     register_used_image(player_name, fname)
+                    if url:
+                        register_image_url(url, player_name, "wikipedia")
                 except Exception:
                     pass
                 log.info(f"Wikipedia: {player_name} → {fname}")
@@ -225,8 +231,12 @@ class ImageManager:
         return None
 
     async def _try_wikimedia(self, player_name: str, image_type: str) -> dict | None:
-        from utils.dedup import register_used_image
-        for photo in get_player_photos(player_name, count=4):
+        from utils.dedup import is_duplicate_image_url, register_image_url, register_used_image
+        for photo in get_player_photos(player_name, count=6):
+            url = photo.get("url", "")
+            if url and is_duplicate_image_url(url):
+                log.debug(f"Wikimedia URL já usada (dedup): {player_name}")
+                continue
             try:
                 local_path = await self.cache.download_and_save(player_name, photo, image_type)
                 if local_path not in self._used_paths:
@@ -234,6 +244,8 @@ class ImageManager:
                     fname = local_path.split("/")[-1]
                     try:
                         register_used_image(player_name, fname)
+                        if url:
+                            register_image_url(url, player_name, "wikimedia")
                     except Exception:
                         pass
                     return {
