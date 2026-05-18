@@ -31,3 +31,6 @@ aiofiles>=23.2.0
 
 # APScheduler
 APScheduler>=3.10.0
+
+# Image search fallback (SerpAPI esgotado → DuckDuckGo)
+ddgs>=9.0.0

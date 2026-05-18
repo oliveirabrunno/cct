@@ -132,11 +132,7 @@ async def generate_match_result_card(match_context: dict) -> dict | None:
     result_path = await generate_post("match_result", match_context, post_data)
 
     if not result_path:
-        # Fallback Pillow
-        result_path = _pil_fallback_card(match_context, None, str(OUTPUT_DIR / f"match_result_fallback_{int(time.time())}.png"))
-
-    if not result_path:
-        log.error(f"Falha ao gerar card para {winner} vs {loser}")
+        log.error(f"Card abortado para {winner} vs {loser} — sem foto disponível")
         return None
 
     log.info(f"Match result card: {result_path}")
@@ -155,7 +151,7 @@ def _pil_fallback_card(ctx: dict, bg_path: str | None, output_path: str) -> str 
         from PIL import Image, ImageDraw, ImageFont
         import textwrap
 
-        W, H = CARD_W, CARD_H
+        W, H = 1080, 1080
         img = Image.new("RGB", (W, H), (10, 10, 10))
 
         if bg_path:

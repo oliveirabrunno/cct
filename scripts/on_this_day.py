@@ -174,28 +174,8 @@ async def run():
     path = await generate_card_with_player("stat_card", card_data, content_data)
 
     if not path:
-        log.error("Falha ao gerar card On This Day")
+        log.error(f"Card On This Day abortado para '{player}' — sem foto disponível (regra: nunca publicar sem imagem)")
         return
-
-    # Garantia: não publicar se o card ficou sem imagem
-    # Verificar tamanho do arquivo (card sem imagem costuma ser < 200KB)
-    import os
-    file_size = os.path.getsize(path)
-    if file_size < 50_000:  # 50KB — suspeito de ser card vazio
-        log.warning(f"Card suspeito de estar sem imagem (tamanho: {file_size}B) — verificando...")
-        # Tentar novamente com busca explícita
-        from utils.image_manager import ImageManager
-        img_manager = ImageManager()
-        img_data = await img_manager.get_player_image(player, image_type="any")
-        if not img_data:
-            log.error(f"Sem foto para '{player}' — cancelando publicação para evitar post sem imagem")
-            return
-        log.info(f"Foto encontrada na segunda tentativa: {img_data.get('path')}")
-        # Regenerar com a foto
-        path = await generate_card_with_player("stat_card", card_data, content_data)
-        if not path:
-            log.error("Segunda tentativa de geração falhou — cancelando")
-            return
 
     if not can_publish_feed_post():
         log.warning("Quota Meta atingida — card salvo localmente")

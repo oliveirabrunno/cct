@@ -171,7 +171,8 @@ RESPONDA SOMENTE JSON:
             break
 
     if not b64:
-        log.warning(f"Sem foto para {player_name} — card sem imagem")
+        log.error(f"Sem foto para '{player_name}' — abortando stat_historico (regra: nunca publicar sem imagem)")
+        return None
 
     # ── 3. Montar JSON do template ─────────────────────────────────────────
     template_data = {

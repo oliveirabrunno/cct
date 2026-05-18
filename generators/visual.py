@@ -100,7 +100,11 @@ async def generate_carousel(
                 if img_data and img_data.get("path"):
                     slide["image"] = _image_to_base64(img_data['path'])
                 else:
-                    slide["image"] = ""
+                    log.error(
+                        f"Slide '{kind}' sem foto para '{player_query}' — abortando carrossel "
+                        "(regra: nunca publicar sem imagem)"
+                    )
+                    return []
             else:
                 slide["image"] = ""
                 
@@ -200,9 +204,16 @@ async def generate_post(
     if img_data and img_data.get("path"):
         post_data["image"] = _image_to_base64(img_data['path'])
         post_data["credit"] = img_data.get("credit_text", "")
+    elif not post_data.get("image"):
+        # Sem foto do jogador E sem imagem alternativa (ex: chart) → abortar
+        log.error(
+            f"Sem foto para '{player_query}' e sem imagem alternativa — abortando card "
+            "(regra: nunca publicar sem imagem)"
+        )
+        return None
     else:
-        log.warning(f"Sem foto para {player_query} e sem fallback. Card pode ficar vazio.")
-        post_data["image"] = ""
+        # Já há uma imagem no post_data (ex: chart de insight) — usar ela
+        log.warning(f"Sem foto para '{player_query}' — usando imagem alternativa já presente no card")
 
     # Selecionar template: insight.html para scout/h2h com stats, post.html para o resto
     use_insight_template = (
