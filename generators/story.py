@@ -60,55 +60,64 @@ class StoryGenerator:
         post_data: dict,
         post_type: str,
         player_name: str,
-    ) -> str:
-        canvas = await self._build_base_canvas(player_name, "action")
-        canvas = self._apply_gradient(canvas, start_at=0.40)
+    ) -> str | None:
+        from generators.visual import generate_story
 
-        # Infográfico flutuante (card com dado chave)
-        infographic = await self._generate_floating_infographic(post_data, post_type)
-        if infographic:
-            canvas = self._overlay_element(canvas, infographic, y_frac=0.48)
+        hook    = post_data.get("story_hook") or post_data.get("headline", "")
+        sub     = post_data.get("subtext") or post_data.get("subtitle", "")
+        surface = post_data.get("surface", "neutral")
 
-        # Texto principal
-        hook = post_data.get("story_hook") or post_data.get("headline", "")
-        if hook:
-            canvas = self._draw_text_block(canvas, hook, y_frac=0.74, font_size=58)
+        story_data = {
+            "surface": surface,
+            "badge":   "VER POST",
+            "kicker":  post_data.get("kicker", ""),
+            "title":   hook,
+            "subtitle": sub,
+        }
+        path = await generate_story("teaser", player_name, story_data)
+        if path:
+            log.info(f"Story teaser: {path}")
+            return path
 
-        canvas = self._draw_logo(canvas)
-        canvas = self._draw_handle(canvas)
-
-        output = str(OUTPUT_DIR / f"story_teaser_{int(time.time())}.png")
-        canvas.save(output, "PNG", quality=95)
-        log.info(f"Story teaser: {output}")
-        return output
+        # Fallback Pillow
+        return await self._pillow_teaser_story(post_data, player_name)
 
     # ─── BREAKING NEWS ────────────────────────────────────────────────────────
 
-    async def generate_breaking_story(self, match_result: dict) -> str:
-        winner    = match_result.get("winner", "").upper()
-        loser     = match_result.get("loser", "")
-        
-        canvas = await self._build_base_canvas(winner, "action", fallback_player=loser)
-        canvas = self._apply_gradient(canvas, start_at=0.30)
-        score     = match_result.get("score", "")
+    async def generate_breaking_story(self, match_result: dict) -> str | None:
+        from generators.visual import generate_story
+
+        winner     = match_result.get("winner", "")
+        loser      = match_result.get("loser", "")
+        score      = match_result.get("score", "")
         tournament = match_result.get("tournament", "")
+        stat       = match_result.get("top_stat", "")
 
-        canvas = self._draw_label(canvas, "RESULTADO", y_frac=0.47)
-        canvas = self._draw_headline(canvas, f"{winner} VENCE", y_frac=0.52)
-        canvas = self._draw_text_block(
-            canvas, f"{loser}  ·  {score}  ·  {tournament}",
-            y_frac=0.68, font_size=40, color=self.BRAND_GRAY,
-        )
-
-        stat = match_result.get("top_stat", "")
+        title    = f"{winner.split()[-1].upper()} vence {loser.split()[-1].upper()}"
+        subtitle = f"{score} · {tournament}"
         if stat:
-            canvas = self._draw_stat_pill(canvas, stat, y_frac=0.78)
+            subtitle = f"{subtitle} — {stat}"
 
-        canvas = self._draw_logo(canvas)
-        output = str(OUTPUT_DIR / f"story_breaking_{int(time.time())}.png")
-        canvas.save(output, "PNG", quality=95)
-        log.info(f"Story breaking: {output}")
-        return output
+        # Detectar superfície pelo torneio
+        surface = "clay" if any(k in tournament.lower() for k in (
+            "roland", "garros", "roma", "madrid", "monte-carlo", "saibro"
+        )) else "neutral"
+
+        story_data = {
+            "surface":  surface,
+            "badge":    "RESULTADO",
+            "kicker":   tournament,
+            "title":    title,
+            "subtitle": subtitle,
+            "tournament": tournament,
+        }
+        path = await generate_story("breaking", winner, story_data)
+        if path:
+            log.info(f"Story breaking: {path}")
+            return path
+
+        # Fallback Pillow
+        return await self._pillow_breaking_story(match_result)
 
     # ─── H2H POLL ─────────────────────────────────────────────────────────────
 
@@ -167,23 +176,81 @@ class StoryGenerator:
 
     # ─── CURIOSIDADE RÁPIDA ────────────────────────────────────────────────────
 
-    async def generate_curiosity_story(self, stat: str, context: str, player_name: str = "") -> str:
-        canvas = await self._build_base_canvas(player_name, "headshot") if player_name else \
-                 Image.new("RGB", (self.STORY_W, self.STORY_H), self.BRAND_DARK)
+    async def generate_curiosity_story(
+        self,
+        stat: str,
+        context: str,
+        player_name: str = "",
+        surface: str = "neutral",
+        badge: str = "VOCÊ SABIA?",
+        kicker: str = "",
+    ) -> str | None:
+        from generators.visual import generate_story
 
+        story_data = {
+            "surface":  surface,
+            "badge":    badge,
+            "kicker":   kicker,
+            "title":    stat,
+            "subtitle": context,
+        }
+        path = await generate_story("curiosity", player_name, story_data)
+        if path:
+            log.info(f"Story curiosidade: {path}")
+            return path
+
+        # Fallback Pillow
+        return await self._pillow_curiosity_story(stat, context, player_name)
+
+    # ─── FALLBACKS PILLOW (quando Puppeteer/Node não disponível) ─────────────
+
+    async def _pillow_curiosity_story(self, stat: str, context: str, player_name: str) -> str | None:
+        canvas = await self._build_base_canvas(player_name, "action") if player_name else \
+                 Image.new("RGB", (self.STORY_W, self.STORY_H), self.BRAND_DARK)
         canvas = self._apply_gradient(canvas, start_at=0.25)
         canvas = self._draw_label(canvas, "VOCÊ SABIA?", y_frac=0.38)
         canvas = self._draw_headline(canvas, stat, y_frac=0.46, font_size=72)
         canvas = self._draw_text_block(canvas, context, y_frac=0.70, font_size=44)
         canvas = self._draw_logo(canvas)
         canvas = self._draw_handle(canvas)
-
         output = str(OUTPUT_DIR / f"story_curiosity_{int(time.time())}.png")
         canvas.save(output, "PNG", quality=95)
-        log.info(f"Story curiosidade: {output}")
         return output
 
-    # ─── HELPERS ──────────────────────────────────────────────────────────────
+    async def _pillow_breaking_story(self, match_result: dict) -> str | None:
+        winner     = match_result.get("winner", "").upper()
+        loser      = match_result.get("loser", "")
+        score      = match_result.get("score", "")
+        tournament = match_result.get("tournament", "")
+        canvas = await self._build_base_canvas(winner, "action", fallback_player=loser)
+        canvas = self._apply_gradient(canvas, start_at=0.30)
+        canvas = self._draw_label(canvas, "RESULTADO", y_frac=0.47)
+        canvas = self._draw_headline(canvas, f"{winner} VENCE", y_frac=0.52)
+        canvas = self._draw_text_block(
+            canvas, f"{loser}  ·  {score}  ·  {tournament}",
+            y_frac=0.68, font_size=40, color=self.BRAND_GRAY,
+        )
+        stat = match_result.get("top_stat", "")
+        if stat:
+            canvas = self._draw_stat_pill(canvas, stat, y_frac=0.78)
+        canvas = self._draw_logo(canvas)
+        output = str(OUTPUT_DIR / f"story_breaking_{int(time.time())}.png")
+        canvas.save(output, "PNG", quality=95)
+        return output
+
+    async def _pillow_teaser_story(self, post_data: dict, player_name: str) -> str | None:
+        canvas = await self._build_base_canvas(player_name, "action")
+        canvas = self._apply_gradient(canvas, start_at=0.40)
+        hook = post_data.get("story_hook") or post_data.get("headline", "")
+        if hook:
+            canvas = self._draw_text_block(canvas, hook, y_frac=0.74, font_size=58)
+        canvas = self._draw_logo(canvas)
+        canvas = self._draw_handle(canvas)
+        output = str(OUTPUT_DIR / f"story_teaser_{int(time.time())}.png")
+        canvas.save(output, "PNG", quality=95)
+        return output
+
+    # ─── HELPERS INTERNOS ─────────────────────────────────────────────────────
 
     async def _build_base_canvas(self, player_name: str, image_type: str, fallback_player: str = "") -> Image.Image:
         canvas = Image.new("RGB", (self.STORY_W, self.STORY_H), self.BRAND_DARK)

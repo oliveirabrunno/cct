@@ -102,29 +102,62 @@ async def _generate_tournament_story(gen: StoryGenerator, content_gen: ContentGe
 
 
 async def _generate_ranking_story(gen: StoryGenerator) -> str | None:
-    """Story rápido com destaque de ranking — foco nos brasileiros."""
+    """Story de ranking brasileiro com copy gerado pelo Claude — ângulo variado a cada publicação."""
     try:
         from scrapers.live_ranking import fetch_atp_live_rankings, fetch_wta_live_rankings
+        from generators.content import ContentGenerator, _load_prompt
+        from utils.dedup import player_posted_recently
+
         atp = fetch_atp_live_rankings(30)
         wta = fetch_wta_live_rankings(30)
 
         bra_atp = next((p for p in atp if p["country"] == "BRA"), None)
         bra_wta = next((p for p in wta if p["country"] == "BRA"), None)
 
-        if bra_atp:
-            stat    = f"Fonseca #{bra_atp['rank']} no mundo"
-            context = (
-                f"{bra_atp['points']} pontos ATP. "
-                f"O brasileiro mais bem ranqueado desde Guga."
-            )
-            return await gen.generate_curiosity_story(stat, context, player_name="João Fonseca")
+        # Escolher jogador — respeitar cooldown para não saturar Fonseca
+        if bra_atp and not player_posted_recently("João Fonseca", hours=22):
+            player_name = "João Fonseca"
+            rank   = bra_atp["rank"]
+            points = bra_atp["points"]
+        elif bra_wta and not player_posted_recently("Beatriz Haddad Maia", hours=22):
+            player_name = "Beatriz Haddad Maia"
+            rank   = bra_wta["rank"]
+            points = bra_wta["points"]
+        else:
+            log.info("ranking_story: jogadores brasileiros em cooldown — pulando")
+            return None
 
-        if bra_wta:
-            stat    = f"Bia #{bra_wta['rank']} no ranking WTA"
-            context = f"{bra_wta['points']} pontos. Melhor brasileira em atividade."
-            return await gen.generate_curiosity_story(stat, context, player_name="Beatriz Haddad Maia")
+        # Claude gera copy com ângulo novo — não apenas "X #N no mundo"
+        content_gen = ContentGenerator()
+        system = _load_prompt("base_voice")
+        prompt = (
+            f"Gere conteúdo para um story Instagram sobre {player_name}, tenista brasileiro.\n"
+            f"Dados: #{rank} no ranking mundial, {points} pontos.\n\n"
+            f"REGRAS DE COPY:\n"
+            f"- badge: rótulo curto, máx 12 chars (ex: RANKING, ATP LIVE, DESTAQUE BR, TOP {rank})\n"
+            f"- kicker: contexto de torneio/período, máx 38 chars (ex: Roland Garros · Fase de Grupos)\n"
+            f"- title: frase de impacto, máx 28 chars\n"
+            f"  VARIAR O ÂNGULO — nunca repetir o mesmo estilo:\n"
+            f"  conquista recente | trajetória de evolução | rivalidade | dado histórico | momento atual\n"
+            f"  Exemplos válidos: 'Brasil tem seu herói', 'Ascensão imparável', 'Top {rank} confirmado',\n"
+            f"  'Melhor fase da carreira', 'O momento é agora'\n"
+            f"  PROIBIDO: 'melhor desde Guga', 'mais bem ranqueado desde', 'o brasileiro mais...'\n"
+            f"- subtitle: 1 frase de contexto rico, máx 85 chars, com dado concreto\n\n"
+            f"Responda JSON: {{\"badge\":\"\", \"kicker\":\"\", \"title\":\"\", \"subtitle\":\"\"}}"
+        )
+        raw  = content_gen._call_claude(system, prompt, max_tokens=300)
+        data = content_gen._parse_json_response(raw)
+        if not data:
+            return None
 
-        return None
+        return await gen.generate_curiosity_story(
+            stat=data.get("title", f"#{rank} no mundo"),
+            context=data.get("subtitle", f"{points} pontos ATP"),
+            player_name=player_name,
+            surface="clay",
+            badge=data.get("badge", "RANKING"),
+            kicker=data.get("kicker", f"#{rank} · {points} pts"),
+        )
     except Exception as e:
         log.error(f"ranking_story falhou: {e}")
         return None
@@ -198,10 +231,10 @@ async def run_story_feed(count: int = 3, publish: bool = True) -> list[str]:
     # TTLs por tipo: news pode repetir a cada 3h (notícia diferente);
     # conteúdo estático (ranking, torneio, draw) uma vez por dia.
     STORY_TTL = {
-        "news_update":     3,   # horas
-        "ranking_update":  20,
-        "tournament_info": 20,
-        "draw_teaser":     20,
+        "news_update":     3,   # horas — notícia diferente a cada vez
+        "ranking_update":  48,  # a cada 2 dias — Claude varia o ângulo mas conteúdo é similar
+        "tournament_info": 24,
+        "draw_teaser":     24,
     }
 
     today = date.today().isoformat()

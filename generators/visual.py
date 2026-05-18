@@ -24,6 +24,7 @@ SCREENSHOT_JS = Path(__file__).parent / "screenshot.js"
 TEMPLATE_HTML = Path("config/templates/carousel.html")
 POST_TEMPLATE_HTML = Path("config/templates/post.html")
 INSIGHT_TEMPLATE_HTML = Path("config/templates/insight.html")
+STORY_TEMPLATE_HTML = Path("config/templates/story.html")
 OUTPUT_DIR = Path("output/queue")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -280,3 +281,72 @@ async def generate_card_with_player(
         "player_image_query": data.get("player", "")
     }
     return await generate_post(post_type, data, post_data)
+
+
+async def generate_story(
+    story_type: str,
+    player_name: str,
+    story_data: dict,
+    year: int = None,
+) -> str | None:
+    """
+    Gera story 1080×1920 usando story.html.
+    story_data: badge, kicker, title, subtitle, surface (clay/grass/hard/neutral).
+    player_name: usado para buscar foto de fundo como action shot.
+    """
+    if not STORY_TEMPLATE_HTML.exists():
+        log.error("story.html não encontrado")
+        return None
+
+    img_manager = ImageManager()
+
+    if player_name:
+        img_data = await img_manager.get_player_image(
+            player_name,
+            image_type="action",
+            tournament_name=story_data.get("tournament"),
+            year=year,
+        )
+        if img_data and img_data.get("path"):
+            story_data["image"] = _image_to_base64(img_data["path"])
+            story_data["credit"] = img_data.get("credit_text", "")
+        else:
+            story_data.setdefault("image", "")
+            story_data.setdefault("credit", "")
+    else:
+        story_data.setdefault("image", "")
+        story_data.setdefault("credit", "")
+
+    html_content = STORY_TEMPLATE_HTML.read_text(encoding="utf-8")
+    json_str = json.dumps(story_data, ensure_ascii=False)
+    html_content = re.sub(
+        r'<script id="post-data" type="application/json">.*?</script>',
+        f'<script id="post-data" type="application/json">\n{json_str}\n</script>',
+        html_content,
+        flags=re.DOTALL,
+    )
+
+    ts = int(time.time())
+    tmp_html = f"/tmp/story_{ts}.html"
+    with open(tmp_html, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+    output_png = str(OUTPUT_DIR / f"story_{story_type}_{ts}.png")
+    try:
+        result = subprocess.run(
+            ["node", str(SCREENSHOT_JS), tmp_html, output_png, "1080", "1920"],
+            capture_output=True, text=True, timeout=45,
+        )
+        if result.returncode != 0:
+            log.error(f"Puppeteer story erro: {result.stderr}")
+            return None
+        log.info(f"Story gerado: {output_png}")
+        return output_png
+    except Exception as e:
+        log.error(f"generate_story falhou: {e}")
+        return None
+    finally:
+        try:
+            os.unlink(tmp_html)
+        except Exception:
+            pass

@@ -1,9 +1,8 @@
 <!doctype html>
 <!--
-  ============================================================
   CAFÉ COM TÊNIS — INSTAGRAM STORY TEMPLATE (1080×1920)
-  Layout Editorial — safe-areas do Instagram preservadas (~250px topo/rodapé)
-  ============================================================
+  Puppeteer: viewport 1080×1920, clip { x:0, y:0, width:1080, height:1920 }
+  safe-areas: 250px topo, 400px base (UI do Instagram)
 -->
 <html lang="pt-BR">
 <head>
@@ -15,75 +14,109 @@
 
 <script id="post-data" type="application/json">
 {
-  "surface": "grass",
-  "badge": "Análise",
-  "kicker": "Wimbledon · Semifinal",
-  "title": "Por que a grama de Wimbledon mudou em 2026",
-  "subtitle": "A nova grama All Court ficou mais lenta — e isso explica por que defensores como Sinner estão dominando.",
-  "image": "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=1600&q=80",
-  "credit": "Getty Images"
+  "surface": "clay",
+  "badge": "ROLAND GARROS",
+  "kicker": "Saibro · Favorito",
+  "title": "Alcaraz é o dono do saibro em 2026",
+  "subtitle": "Cinco títulos na temporada de terra, melhor aproveitamento do circuito.",
+  "image": "",
+  "credit": ""
 }
 </script>
 
 <style>
-  html,body { margin:0; padding:0; background:#1a1a1c; font-family:Geist,system-ui,sans-serif; }
-  body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
-  #frame {
-    width:1080px; height:1920px; flex:0 0 auto;
-    position:relative; overflow:hidden;
-    transform-origin:center center; background:#000; color:#fff;
-    box-shadow:0 24px 80px rgba(0,0,0,.6);
-  }
-  @media (max-height: 1950px) { #frame { transform: scale(calc((100vh - 40px) / 1920)); } }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden;
+               background: #0a0a0a; font-family: Geist, system-ui, sans-serif; }
 
-  .photo { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-  .gradient {
-    position:absolute; inset:0;
-    background: linear-gradient(180deg, rgba(0,0,0,.6) 0%, rgba(0,0,0,0) 22%,
-                                         rgba(0,0,0,0) 38%, rgba(0,0,0,.92) 100%);
+  #frame {
+    width: 1080px; height: 1920px;
+    position: relative; overflow: hidden;
+    background: #0a0a0a; color: #fff;
   }
+
+  /* Foto de fundo — object-fit: cover centraliza automaticamente */
+  .photo {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: center 30%;
+  }
+
+  /* Gradiente: transparente no topo, opaco embaixo */
+  .gradient {
+    position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(0,0,0,.55) 0%,
+      rgba(0,0,0,.0) 20%,
+      rgba(0,0,0,.0) 42%,
+      rgba(0,0,0,.88) 72%,
+      rgba(0,0,0,.97) 100%
+    );
+  }
+
+  /* Topbar: badge + wordmark */
   .topbar {
-    position:absolute; top:180px; left:56px; right:56px; z-index:2;
-    display:flex; justify-content:space-between; align-items:flex-start;
+    position: absolute; top: 180px; left: 56px; right: 56px; z-index: 2;
+    display: flex; justify-content: space-between; align-items: flex-start;
   }
   .badge {
-    background:var(--surface-chip); color:var(--surface-chipInk);
-    padding:14px 22px 13px; border-radius:4px;
-    font-family:"Geist Mono",monospace; font-size:20px; letter-spacing:.16em;
-    text-transform:uppercase; font-weight:600;
-    display:inline-flex; align-items:center; gap:14px;
+    background: var(--surface-chip); color: var(--surface-chipInk);
+    padding: 13px 20px 12px; border-radius: 4px;
+    font-family: "Geist Mono", monospace; font-size: 19px; letter-spacing: .15em;
+    text-transform: uppercase; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 12px;
   }
-  .badge::before { content:""; width:8px; height:8px; border-radius:50%;
-                   background:var(--surface-chipInk); opacity:.9; }
+  .badge::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--surface-chipInk); opacity: .9;
+  }
   .wordmark {
-    display:inline-flex; align-items:center; gap:10px; color:#fff;
-    font-family:"Instrument Serif",serif; font-size:26px; font-style:italic; line-height:1;
+    display: inline-flex; align-items: center; gap: 9px; color: #fff;
+    font-family: "Instrument Serif", serif; font-size: 24px;
+    font-style: italic; line-height: 1;
   }
-  .wordmark svg { width:30px; height:30px; }
+  .wordmark svg { width: 28px; height: 28px; }
+
+  /* Área de conteúdo — cresce para cima a partir de bottom:300px */
   .content {
-    position:absolute; left:56px; right:56px; bottom:320px; z-index:2;
-    display:flex; gap:28px; align-items:flex-end;
+    position: absolute; left: 56px; right: 56px; bottom: 300px; z-index: 2;
+    display: flex; gap: 24px; align-items: flex-end;
+    max-height: 1050px; /* evita overlap com topbar */
   }
-  .stripe { width:6px; align-self:stretch; background:var(--surface-accent);
-            border-radius:3px; min-height:280px; }
+  .stripe {
+    width: 6px; align-self: stretch; background: var(--surface-accent);
+    border-radius: 3px; flex-shrink: 0; min-height: 240px;
+  }
+  .text-col { flex: 1; min-width: 0; }
+
   .kicker {
-    font-family:"Geist Mono",monospace; color:var(--surface-accent);
-    font-size:22px; letter-spacing:.2em; text-transform:uppercase;
-    font-weight:500; margin-bottom:22px;
+    font-family: "Geist Mono", monospace; color: var(--surface-accent);
+    font-size: 21px; letter-spacing: .18em; text-transform: uppercase;
+    font-weight: 500; margin-bottom: 20px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .title {
-    font-family:"Instrument Serif",serif; color:#fff; font-size:110px;
-    line-height:1.0; margin:0; font-weight:400; letter-spacing:-.02em; text-wrap:balance;
+    font-family: "Instrument Serif", serif; color: #fff;
+    line-height: 1.02; margin: 0; font-weight: 400;
+    letter-spacing: -.02em; text-wrap: balance;
+    /* font-size set dynamically by JS based on text length */
   }
   .subtitle {
-    color:rgba(255,255,255,.85); font-size:30px; line-height:1.35;
-    margin:28px 0 0; max-width:820px; text-wrap:pretty;
+    color: rgba(255,255,255,.82); font-size: 28px; line-height: 1.35;
+    margin-top: 26px; text-wrap: pretty;
+    /* clamp to 4 lines */
+    display: -webkit-box; -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical; overflow: hidden;
   }
+
+  /* Rodapé */
   .footer-strip {
-    position:absolute; bottom:220px; left:56px; right:56px;
-    display:flex; justify-content:space-between;
-    font-family:"Geist Mono",monospace; font-size:18px;
-    letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.6);
+    position: absolute; bottom: 200px; left: 56px; right: 56px; z-index: 2;
+    display: flex; justify-content: space-between;
+    font-family: "Geist Mono", monospace; font-size: 17px;
+    letter-spacing: .11em; text-transform: uppercase;
+    color: rgba(255,255,255,.5);
   }
 </style>
 </head>
@@ -92,20 +125,29 @@
 
   <script>
     const SURFACES = {
-      hard:    { accent:'#3B82F6', chip:'#1E40AF', chipInk:'#F5F8FF' },
-      grass:   { accent:'#3DA15A', chip:'#1F6F3C', chipInk:'#F2F8EE' },
-      clay:    { accent:'#E76A2A', chip:'#B4441C', chipInk:'#FFF4EC' },
-      neutral: { accent:'#D4B96A', chip:'#1A1A1C', chipInk:'#F4F1EA' },
+      hard:    { accent: '#3B82F6', chip: '#1E40AF', chipInk: '#F5F8FF' },
+      grass:   { accent: '#3DA15A', chip: '#1F6F3C', chipInk: '#F2F8EE' },
+      clay:    { accent: '#E76A2A', chip: '#B4441C', chipInk: '#FFF4EC' },
+      neutral: { accent: '#C8F135', chip: '#1A1A1C', chipInk: '#F4F1EA' },
     };
+
     const wordmarkSVG = `
       <span class="wordmark">
         <svg viewBox="0 0 28 28" aria-hidden="true">
-          <circle cx="14" cy="14" r="12" fill="none" stroke="#fff" stroke-width="1.6"></circle>
-          <path d="M3 9 Q14 14 25 9" fill="none" stroke="#fff" stroke-width="1.6"></path>
-          <path d="M3 19 Q14 14 25 19" fill="none" stroke="#fff" stroke-width="1.6"></path>
+          <circle cx="14" cy="14" r="12" fill="none" stroke="#fff" stroke-width="1.6"/>
+          <path d="M3 9 Q14 14 25 9" fill="none" stroke="#fff" stroke-width="1.6"/>
+          <path d="M3 19 Q14 14 25 19" fill="none" stroke="#fff" stroke-width="1.6"/>
         </svg>
         <span>café com tênis</span>
       </span>`;
+
+    function titleFontSize(text) {
+      const len = (text || '').length;
+      if (len > 50) return '62px';
+      if (len > 35) return '76px';
+      if (len > 22) return '90px';
+      return '108px';
+    }
 
     function render() {
       const data = JSON.parse(document.getElementById('post-data').textContent);
@@ -115,19 +157,23 @@
       r.setProperty('--surface-chip',    s.chip);
       r.setProperty('--surface-chipInk', s.chipInk);
 
+      const photoEl = data.image
+        ? `<img class="photo" src="${data.image}" alt="" />`
+        : '';
+
       document.getElementById('frame').innerHTML = `
-        <img class="photo" src="${data.image}" alt="" />
+        ${photoEl}
         <div class="gradient"></div>
         <div class="topbar">
-          <div class="badge">${data.badge}</div>
+          <div class="badge">${data.badge || ''}</div>
           ${wordmarkSVG}
         </div>
         <div class="content">
           <div class="stripe"></div>
-          <div style="flex:1; min-width:0;">
+          <div class="text-col">
             ${data.kicker ? `<div class="kicker">${data.kicker}</div>` : ''}
-            <h1 class="title">${data.title}</h1>
-            <p class="subtitle">${data.subtitle}</p>
+            <h1 class="title" style="font-size:${titleFontSize(data.title)}">${data.title || ''}</h1>
+            ${data.subtitle ? `<p class="subtitle">${data.subtitle}</p>` : ''}
           </div>
         </div>
         <div class="footer-strip">
@@ -135,6 +181,7 @@
           <span>@cafecomteniss</span>
         </div>`;
     }
+
     render();
   </script>
 </body>
