@@ -255,24 +255,41 @@ class StoryGenerator:
     async def _build_base_canvas(self, player_name: str, image_type: str, fallback_player: str = "") -> Image.Image:
         canvas = Image.new("RGB", (self.STORY_W, self.STORY_H), self.BRAND_DARK)
         if not player_name:
-            return canvas
-            
+            return self._apply_branded_bg(canvas)
+
         img_data = await self.img_manager.get_player_image(player_name, image_type)
-        
+
+        if not img_data or not img_data.get("path"):
+            # Tentar tipo "any" antes de ir para fallback_player
+            img_data = await self.img_manager.get_player_image(player_name, "any")
+
         if not img_data or not img_data.get("path"):
             if fallback_player:
                 log.warning(f"Sem foto para {player_name} — tentando foto do adversário {fallback_player}")
                 img_data = await self.img_manager.get_player_image(fallback_player, image_type)
-                
+
         if img_data and img_data.get("path"):
             try:
                 player_img = Image.open(img_data["path"]).convert("RGB")
                 player_img = self._fit_to_story(player_img)
                 canvas.paste(player_img, (0, 0))
+                return canvas
             except Exception as e:
                 log.error(f"Falha ao processar imagem para story base canvas: {e}")
-                
-        return canvas
+
+        # Sem imagem: usar background com gradiente de marca (não preto puro)
+        return self._apply_branded_bg(canvas)
+
+    def _apply_branded_bg(self, canvas: Image.Image) -> Image.Image:
+        """Aplica gradiente de marca quando não há foto — evita tela totalmente preta."""
+        overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+        # Gradiente vertical: accent (lima) suave no topo → preto na base
+        accent_r, accent_g, accent_b = self.BRAND_ACCENT
+        for y in range(int(canvas.height * 0.5)):
+            alpha = int(60 * (1 - y / (canvas.height * 0.5)))
+            draw.line([(0, y), (canvas.width, y)], fill=(accent_r, accent_g, accent_b, alpha))
+        return Image.alpha_composite(canvas.convert("RGBA"), overlay).convert("RGB")
 
     def _fit_to_story(self, img: Image.Image, target: tuple = None) -> Image.Image:
         target = target or (self.STORY_W, self.STORY_H)

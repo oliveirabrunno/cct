@@ -21,6 +21,12 @@ _STALE_KEYWORDS = [
     "relembre", "relembra", "história", "lenda", "aniversário", "anos atrás",
     "os melhores", "top 10", "ranking dos", "galeria", "arquivo",
     "remember when", "on this day", "throwback", "classic",
+    # Ranking news is not breaking news — João at #30 is old info
+    "sobe no ranking", "sobe para o ranking", "atingiu o ranking",
+    "subiu no ranking", "melhor ranking", "novo ranking", "ranking ao vivo",
+    "ranking atp", "live ranking", "ranking mundial",
+    # Injury news stays fresh for 24h max — filter after that
+    "está recuperando", "continua em recuperação", "previsto para retornar",
 ]
 
 _BREAKING_KEYWORDS = [
@@ -44,15 +50,37 @@ async def _generate_news_story(gen: StoryGenerator, content_gen: ContentGenerato
     """Story de novidade: puxa notícia quente e gera curiosity story."""
     try:
         from scrapers.google_news import fetch_recent_news
-        news = fetch_recent_news(hours=3)
+        from datetime import datetime, timezone
+
+        news = fetch_recent_news(hours=4)
         if not news:
             return None
 
         # Filtrar apenas notícias com fatos acontecendo agora
         relevant = [a for a in news if _is_relevant_news(a)]
         if not relevant:
-            log.info("news_story: nenhuma notícia relevante/breaking nas últimas 3h — pulando story")
+            log.info("news_story: nenhuma notícia relevante/breaking nas últimas 4h — pulando story")
             return None
+
+        # Rejeitar artigos publicados há mais de 4h (usando UTC explícito)
+        now_utc = datetime.now(timezone.utc)
+        fresh = []
+        for a in relevant:
+            try:
+                pub = datetime.fromisoformat(a["published"])
+                if pub.tzinfo is None:
+                    pub = pub.replace(tzinfo=timezone.utc)
+                age_hours = (now_utc - pub).total_seconds() / 3600
+                if age_hours <= 4:
+                    fresh.append(a)
+                else:
+                    log.debug(f"news_story: artigo descartado por idade {age_hours:.1f}h: {a['title'][:60]}")
+            except Exception:
+                fresh.append(a)  # sem data → incluir por precaução
+        if not fresh:
+            log.info("news_story: artigos relevantes são velhos demais (>4h) — pulando story")
+            return None
+        relevant = fresh
 
         top = relevant[0]
         headline = top.get("title", "")
@@ -101,12 +129,37 @@ async def _generate_tournament_story(gen: StoryGenerator, content_gen: ContentGe
         return None
 
 
+def _get_last_posted_rank(player_name: str) -> int | None:
+    """Lê o último ranking publicado a partir do campo description no SQLite."""
+    try:
+        from utils.dedup import _get_conn, _normalize_string
+        norm = _normalize_string(player_name)
+        with _get_conn() as conn:
+            row = conn.execute(
+                "SELECT description FROM posts "
+                "WHERE post_type = 'story_ranking_update' AND player = ? "
+                "ORDER BY published_at DESC LIMIT 1",
+                (norm,)
+            ).fetchone()
+        if row and row[0]:
+            for part in str(row[0]).split():
+                if part.startswith("rank="):
+                    return int(part.split("=")[1])
+    except Exception:
+        pass
+    return None
+
+
 async def _generate_ranking_story(gen: StoryGenerator) -> str | None:
-    """Story de ranking brasileiro com copy gerado pelo Claude — ângulo variado a cada publicação."""
+    """
+    Story de ranking brasileiro — dedup por nome de jogador (não por data),
+    TTL de 72h. Só posta se ranking mudou ≥2 posições OU passou 5 dias desde
+    a última publicação.
+    """
     try:
         from scrapers.live_ranking import fetch_atp_live_rankings, fetch_wta_live_rankings
         from generators.content import ContentGenerator, _load_prompt
-        from utils.dedup import player_posted_recently
+        from utils.dedup import is_duplicate, register_post
 
         atp = fetch_atp_live_rankings(30)
         wta = fetch_wta_live_rankings(30)
@@ -114,34 +167,52 @@ async def _generate_ranking_story(gen: StoryGenerator) -> str | None:
         bra_atp = next((p for p in atp if p["country"] == "BRA"), None)
         bra_wta = next((p for p in wta if p["country"] == "BRA"), None)
 
-        # Escolher jogador — respeitar cooldown para não saturar Fonseca
-        if bra_atp and not player_posted_recently("João Fonseca", hours=22):
+        # Dedup por NOME do jogador (persistente entre dias, independente de cache miss)
+        player_name = rank = points = None
+
+        if bra_atp and not is_duplicate("story_ranking_update", "João Fonseca", hours=72):
             player_name = "João Fonseca"
             rank   = bra_atp["rank"]
             points = bra_atp["points"]
-        elif bra_wta and not player_posted_recently("Beatriz Haddad Maia", hours=22):
+        elif bra_wta and not is_duplicate("story_ranking_update", "Beatriz Haddad Maia", hours=72):
             player_name = "Beatriz Haddad Maia"
             rank   = bra_wta["rank"]
             points = bra_wta["points"]
         else:
-            log.info("ranking_story: jogadores brasileiros em cooldown — pulando")
+            log.info("ranking_story: brasileiros em cooldown (72h) — pulando")
             return None
 
-        # Claude gera copy com ângulo novo — não apenas "X #N no mundo"
+        # Só posta se ranking mudou ≥2 posições OU passou 5+ dias (120h)
+        last_rank = _get_last_posted_rank(player_name)
+        if last_rank is not None and abs(last_rank - rank) < 2:
+            if is_duplicate("story_ranking_update", player_name, hours=120):
+                log.info(
+                    f"ranking_story: {player_name} #{rank} (último: #{last_rank}) "
+                    "sem mudança significativa e postado recentemente — pulando"
+                )
+                return None
+
         content_gen = ContentGenerator()
         system = _load_prompt("base_voice")
+        move = ""
+        if last_rank:
+            diff = last_rank - rank
+            if diff > 0:
+                move = f"Subiu {diff} posições desde o último post. "
+            elif diff < 0:
+                move = f"Caiu {abs(diff)} posições desde o último post. "
+
         prompt = (
             f"Gere conteúdo para um story Instagram sobre {player_name}, tenista brasileiro.\n"
-            f"Dados: #{rank} no ranking mundial, {points} pontos.\n\n"
+            f"Dados: #{rank} no ranking mundial, {points} pontos. {move}\n\n"
             f"REGRAS DE COPY:\n"
             f"- badge: rótulo curto, máx 12 chars (ex: RANKING, ATP LIVE, DESTAQUE BR, TOP {rank})\n"
-            f"- kicker: contexto de torneio/período, máx 38 chars (ex: Roland Garros · Fase de Grupos)\n"
+            f"- kicker: contexto de torneio/período, máx 38 chars (ex: Roland Garros · Saibro)\n"
             f"- title: frase de impacto, máx 28 chars\n"
             f"  VARIAR O ÂNGULO — nunca repetir o mesmo estilo:\n"
             f"  conquista recente | trajetória de evolução | rivalidade | dado histórico | momento atual\n"
-            f"  Exemplos válidos: 'Brasil tem seu herói', 'Ascensão imparável', 'Top {rank} confirmado',\n"
-            f"  'Melhor fase da carreira', 'O momento é agora'\n"
             f"  PROIBIDO: 'melhor desde Guga', 'mais bem ranqueado desde', 'o brasileiro mais...'\n"
+            f"  PROIBIDO: mencionar o número {rank} literalmente no title se não houve mudança\n"
             f"- subtitle: 1 frase de contexto rico, máx 85 chars, com dado concreto\n\n"
             f"Responda JSON: {{\"badge\":\"\", \"kicker\":\"\", \"title\":\"\", \"subtitle\":\"\"}}"
         )
@@ -150,7 +221,7 @@ async def _generate_ranking_story(gen: StoryGenerator) -> str | None:
         if not data:
             return None
 
-        return await gen.generate_curiosity_story(
+        path = await gen.generate_curiosity_story(
             stat=data.get("title", f"#{rank} no mundo"),
             context=data.get("subtitle", f"{points} pontos ATP"),
             player_name=player_name,
@@ -158,6 +229,10 @@ async def _generate_ranking_story(gen: StoryGenerator) -> str | None:
             badge=data.get("badge", "RANKING"),
             kicker=data.get("kicker", f"#{rank} · {points} pts"),
         )
+        if path:
+            # Registrar com nome do jogador para que player_posted_recently() funcione
+            register_post("story_ranking_update", player_name, description=f"rank={rank} pts={points}")
+        return path
     except Exception as e:
         log.error(f"ranking_story falhou: {e}")
         return None
@@ -228,11 +303,10 @@ async def run_story_feed(count: int = 3, publish: bool = True) -> list[str]:
     from utils.dedup import is_duplicate, register_post
     from datetime import date
 
-    # TTLs por tipo: news pode repetir a cada 3h (notícia diferente);
-    # conteúdo estático (ranking, torneio, draw) uma vez por dia.
+    # TTLs por tipo: news pode repetir a cada 4h (notícia diferente);
+    # ranking_update gerencia seu próprio dedup internamente (por nome de jogador, não por data).
     STORY_TTL = {
-        "news_update":     3,   # horas — notícia diferente a cada vez
-        "ranking_update":  48,  # a cada 2 dias — Claude varia o ângulo mas conteúdo é similar
+        "news_update":     4,   # horas — notícia diferente a cada vez
         "tournament_info": 24,
         "draw_teaser":     24,
     }
@@ -241,12 +315,14 @@ async def run_story_feed(count: int = 3, publish: bool = True) -> list[str]:
 
     published = []
     for i, (story_type, generator_fn) in enumerate(STORY_TYPES[:count]):
-        ttl = STORY_TTL.get(story_type, 4)
-        dedup_key = f"{story_type}_{today}"
-
-        if is_duplicate(f"story_{story_type}", dedup_key, hours=ttl):
-            log.info(f"Story {story_type} já publicado nas últimas {ttl}h — pulando")
-            continue
+        # ranking_update usa dedup interno por nome de jogador (TTL 72h) —
+        # não usar dedup externo por data que reseta à meia-noite e é ineficaz.
+        if story_type != "ranking_update":
+            ttl = STORY_TTL.get(story_type, 4)
+            dedup_key = f"{story_type}_{today}"
+            if is_duplicate(f"story_{story_type}", dedup_key, hours=ttl):
+                log.info(f"Story {story_type} já publicado nas últimas {ttl}h — pulando")
+                continue
 
         log.info(f"Gerando story #{i+1}: {story_type}")
         try:
@@ -257,7 +333,9 @@ async def run_story_feed(count: int = 3, publish: bool = True) -> list[str]:
 
             if path:
                 await publisher.publish_story(path)
-                register_post(f"story_{story_type}", dedup_key)
+                # ranking_update registra o post dentro do próprio generator (com player name)
+                if story_type != "ranking_update":
+                    register_post(f"story_{story_type}", f"{story_type}_{today}")
                 published.append(path)
                 log.info(f"Story publicado: {story_type} → {path}")
             else:

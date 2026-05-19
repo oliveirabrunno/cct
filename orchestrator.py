@@ -490,6 +490,26 @@ async def run_on_this_day():
     subprocess.run([sys.executable, "scripts/on_this_day.py"])
 
 
+def _get_next_opponent(player_name: str) -> str | None:
+    """
+    Tenta descobrir o próximo adversário real do jogador via entries do torneio.
+    Retorna None se não for possível determinar (jogador lesionado, não inscrito etc.).
+    """
+    try:
+        from scrapers.tournament_draw import CURRENT_TOURNAMENT
+        entries = CURRENT_TOURNAMENT.get("entries_atp", []) + CURRENT_TOURNAMENT.get("entries_wta", [])
+        name_lower = player_name.lower()
+        # Verificar se o jogador está inscrito no torneio atual
+        if not any(name_lower in e.lower() or e.lower() in name_lower for e in entries):
+            log.info(f"_get_next_opponent: {player_name} não está inscrito em {CURRENT_TOURNAMENT['short']}")
+            return None
+        # Não temos dados de próxima rodada ao vivo — retornar None para não inventar
+        return None
+    except Exception as e:
+        log.debug(f"_get_next_opponent falhou: {e}")
+        return None
+
+
 async def run_stat_card():
     """
     Stat chocante do player mais trending — 10:30 BRT.
@@ -566,15 +586,33 @@ async def run_stat_card():
 
         story_gen = StoryGenerator()
         news = search_news(player, hours=8)
-        if news and not is_duplicate("story_poll", player, hours=18):
-            poll = await story_gen.generate_h2h_poll_story(
-                player_full,
-                "próximo adversário",
-                {"tournament": CURRENT_TOURNAMENT_SHORT, "round": "próxima rodada"},
-            )
-            if poll and poll.get("image_path"):
-                await publisher.publish_story(poll["image_path"])
-                register_post("story_poll", player)
+        if news and not is_duplicate("story_teaser", player, hours=18):
+            # Tentar obter adversário real antes de gerar poll
+            next_opponent = _get_next_opponent(player_full)
+            if next_opponent:
+                poll = await story_gen.generate_h2h_poll_story(
+                    player_full,
+                    next_opponent,
+                    {"tournament": CURRENT_TOURNAMENT_SHORT, "round": "próxima rodada"},
+                )
+                if poll and poll.get("image_path"):
+                    await publisher.publish_story(poll["image_path"])
+                    register_post("story_teaser", player)
+            else:
+                # Sem adversário real confirmado → usar teaser story simples
+                teaser = await story_gen.generate_teaser_story(
+                    post_data={
+                        "headline": headline,
+                        "subtext":  subtext,
+                        "kicker":   CURRENT_TOURNAMENT_SHORT,
+                        "surface":  "clay",
+                    },
+                    post_type="stat_card",
+                    player_name=player_full,
+                )
+                if teaser:
+                    await publisher.publish_story(teaser)
+                    register_post("story_teaser", player)
     elif not can_publish_feed_post():
         log.warning("Stat card: quota Meta atingida — conteúdo salvo localmente")
 

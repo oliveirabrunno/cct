@@ -318,12 +318,24 @@ async def generate_story(
             tournament_name=story_data.get("tournament"),
             year=year,
         )
+        # Fallback: tentar qualquer tipo de imagem se action não encontrada
+        if not (img_data and img_data.get("path")):
+            log.warning(f"Story: sem action shot para '{player_name}' — tentando any")
+            img_data = await img_manager.get_player_image(player_name, image_type="any")
+
         if img_data and img_data.get("path"):
-            story_data["image"] = _image_to_base64(img_data["path"])
-            story_data["credit"] = img_data.get("credit_text", "")
+            b64 = _image_to_base64(img_data["path"])
+            if b64:
+                story_data["image"] = b64
+                story_data["credit"] = img_data.get("credit_text", "")
+            else:
+                log.warning(f"Story: imagem de '{player_name}' inválida/corrompida — descartando")
+                story_data["image"] = ""
+                story_data["credit"] = ""
         else:
-            story_data.setdefault("image", "")
-            story_data.setdefault("credit", "")
+            # Sem imagem → retornar None para acionar fallback Pillow em story.py
+            log.warning(f"Story: nenhuma imagem encontrada para '{player_name}' — ativando fallback Pillow")
+            return None
     else:
         story_data.setdefault("image", "")
         story_data.setdefault("credit", "")

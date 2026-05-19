@@ -1,5 +1,5 @@
 import feedparser
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -11,19 +11,26 @@ RSS_FEEDS = [
 ]
 
 
+def _parse_published(entry) -> datetime | None:
+    """Extrai datetime UTC (timezone-aware) de uma entrada feedparser."""
+    try:
+        # published_parsed é UTC struct_time — criar datetime UTC aware
+        return datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
+    except Exception:
+        return None
+
+
 def fetch_recent_news(hours: int = 6) -> list[dict]:
-    cutoff = datetime.now() - timedelta(hours=hours)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
     articles = []
 
     for url in RSS_FEEDS:
         try:
             feed = feedparser.parse(url)
             for entry in feed.entries:
-                try:
-                    published = datetime(*entry.published_parsed[:6])
-                except Exception:
+                published = _parse_published(entry)
+                if published is None:
                     continue
-
                 if published <= cutoff:
                     continue
 
@@ -48,15 +55,14 @@ def search_news(query: str, hours: int = 24) -> list[dict]:
         f"https://news.google.com/rss/search"
         f"?q={query.replace(' ', '+')}&hl=pt-BR&gl=BR&ceid=BR:pt-419"
     )
-    cutoff = datetime.now() - timedelta(hours=hours)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
     articles = []
 
     try:
         feed = feedparser.parse(url)
         for entry in feed.entries:
-            try:
-                published = datetime(*entry.published_parsed[:6])
-            except Exception:
+            published = _parse_published(entry)
+            if published is None:
                 continue
             if published <= cutoff:
                 continue

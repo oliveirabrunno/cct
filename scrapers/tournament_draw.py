@@ -22,57 +22,62 @@ HEADERS = {
 # a ordem define o seed (posição 0 = seed #1). Usar isso evita o problema
 # de colocar jogadores ausentes no chave (ex: Alcaraz fora de Roma).
 CURRENT_TOURNAMENT = {
-    "name": "Masters 1000 de Roma",
-    "short": "Roma",
+    "name": "Roland Garros",
+    "short": "Roland Garros",
     "surface": "clay",
-    "category": "Masters 1000",
-    "draw_size": 96,
-    "date": "5–18 maio 2026",
-    "location": "Roma, Itália",
-    "atp_id": "404",
-    "atp_slug": "rome",
-    "wta_id": "1835",
-    "wta_slug": "rome",
-    "next_name": "Roland Garros",
-    "next_date": "24 mai–7 jun 2026",
+    "category": "Grand Slam",
+    "draw_size": 128,
+    "date": "24 maio–7 jun 2026",
+    "location": "Paris, França",
+    "atp_id": "520",
+    "atp_slug": "roland-garros",
+    "wta_id": "1840",
+    "wta_slug": "roland-garros",
+    "next_name": "Wimbledon",
+    "next_date": "29 jun–12 jul 2026",
 
-    # Inscritos confirmados no torneio — seed = posição na lista (0-indexed)
-    # Alcaraz NÃO está em Roma 2025 — não inclua aqui
+    # Inscritos confirmados — atualizar quando draw oficial for liberado (23 mai)
+    # Alcaraz LESIONADO — não incluir até confirmação de participação
     "entries_atp": [
         "Jannik Sinner",           # seed 1
         "Alexander Zverev",        # seed 2
         "Novak Djokovic",          # seed 3
-        "Casper Ruud",             # seed 4
-        "Felix Auger-Aliassime",   # seed 5
-        "Ben Shelton",             # seed 6
+        "Casper Ruud",             # seed 4 (especialista no saibro)
+        "Daniil Medvedev",         # seed 5
+        "Holger Rune",             # seed 6
         "Taylor Fritz",            # seed 7
         "Alex de Minaur",          # seed 8
-        "Daniil Medvedev",         # seed 9
-        "Holger Rune",             # seed 10
-        "Stefanos Tsitsipas",      # seed 11
-        "Grigor Dimitrov",         # seed 12
+        "Stefanos Tsitsipas",      # seed 9
+        "Grigor Dimitrov",         # seed 10
+        "Ben Shelton",             # seed 11
+        "Felix Auger-Aliassime",   # seed 12
+        "Hubert Hurkacz",          # seed 13
+        "Andrey Rublev",           # seed 14
+        "Tommy Paul",              # seed 15
+        "Ugo Humbert",             # seed 16
         # --- não-cabeças relevantes ---
-        "João Fonseca",            # #29 no ranking, sem seed
+        "João Fonseca",            # ~#29-30 no ranking
+        "Thiago Seyboth Wild",     # brasileiro
     ],
     "entries_wta": [
         "Aryna Sabalenka",         # seed 1
-        "Elena Rybakina",          # seed 2
-        "Iga Swiatek",             # seed 3
-        "Coco Gauff",              # seed 4
+        "Iga Swiatek",             # seed 2 (4x campeã em Paris)
+        "Coco Gauff",              # seed 3
+        "Elena Rybakina",          # seed 4
         "Jessica Pegula",          # seed 5
-        "Amanda Anisimova",        # seed 6
-        "Mirra Andreeva",          # seed 7
-        "Victoria Mboko",          # seed 8
+        "Mirra Andreeva",          # seed 6
+        "Qinwen Zheng",            # seed 7
+        "Emma Navarro",            # seed 8
         # --- brasileiras ---
         "Beatriz Haddad Maia",     # ranking WTA a confirmar
     ],
 
     # Brasileiros em destaque (sempre no carrossel independente do seed)
-    "brazilians_atp": ["João Fonseca"],
+    "brazilians_atp": ["João Fonseca", "Thiago Seyboth Wild"],
     "brazilians_wta": ["Beatriz Haddad Maia"],
 
     # Quantos seeds oficiais o torneio tem por tour
-    "num_seeds_atp": 12,
+    "num_seeds_atp": 16,
     "num_seeds_wta": 8,
 }
 
