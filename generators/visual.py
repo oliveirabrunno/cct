@@ -124,10 +124,12 @@ async def generate_carousel(
     html_content = TEMPLATE_HTML.read_text(encoding="utf-8")
     
     # Injeta o JSON validando a div
+    # Usa lambda para evitar que re.sub() interprete \n do JSON como quebra de linha
     json_str = json.dumps(slides_data, ensure_ascii=False)
+    _repl = f'<script id="carousel-data" type="application/json">\n{json_str}\n</script>'
     html_content = re.sub(
         r'<script id="carousel-data" type="application/json">.*?</script>',
-        f'<script id="carousel-data" type="application/json">\n{json_str}\n</script>',
+        lambda _: _repl,
         html_content,
         flags=re.DOTALL
     )
@@ -148,7 +150,9 @@ async def generate_carousel(
             timeout=45,
         )
         if result.returncode != 0:
-            log.error(f"Puppeteer erro: {result.stderr}")
+            debug_html = f"/tmp/carousel_debug_{ts}.html"
+            import shutil; shutil.copy(tmp_html, debug_html)
+            log.error(f"Puppeteer erro: {result.stderr}\nHTML preservado em: {debug_html}")
             return []
             
         # Coleta os arquivos gerados (substituindo {index} por 01, 02, etc)
@@ -245,11 +249,11 @@ async def generate_post(
     if use_insight_template:
         log.debug(f"Usando template insight.html para '{post_type}'")
     
-    import re
     json_str = json.dumps(post_data, ensure_ascii=False)
+    _repl = f'<script id="post-data" type="application/json">\n{json_str}\n</script>'
     html_content = re.sub(
         r'<script id="post-data" type="application/json">.*?</script>',
-        f'<script id="post-data" type="application/json">\n{json_str}\n</script>',
+        lambda _: _repl,
         html_content,
         flags=re.DOTALL
     )
@@ -348,9 +352,10 @@ async def generate_story(
 
     html_content = STORY_TEMPLATE_HTML.read_text(encoding="utf-8")
     json_str = json.dumps(story_data, ensure_ascii=False)
+    _repl = f'<script id="post-data" type="application/json">\n{json_str}\n</script>'
     html_content = re.sub(
         r'<script id="post-data" type="application/json">.*?</script>',
-        f'<script id="post-data" type="application/json">\n{json_str}\n</script>',
+        lambda _: _repl,
         html_content,
         flags=re.DOTALL,
     )

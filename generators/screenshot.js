@@ -35,6 +35,8 @@ async function main() {
   });
 
   const page = await browser.newPage();
+  page.on('console', msg => { if (msg.type() === 'error') console.error('[JS]', msg.text()); });
+  page.on('pageerror', err => console.error('[PAGE]', err.message));
   await page.setViewport({ width: parseInt(width), height: parseInt(height) });
   await page.goto(`file://${absoluteHtml}`, { waitUntil: "networkidle0" });
 

@@ -17,6 +17,29 @@ from utils.logger import get_logger
 
 log = get_logger(__name__)
 
+_VISUAL_NOTE_KIND = {
+    "foto_action": "cover",
+    "foto_clean":  "cover",
+    "sem_foto":    "text",
+    "logo":        "outro",
+}
+
+
+def _normalize_draw_slides(slides_content: dict, badge: str = "ATP Tour") -> dict:
+    """
+    Prompts draw_overview/draw_path retornam headline/subtext/visual_note.
+    O carousel.html espera kind/title/subtitle. Esta função faz a conversão.
+    """
+    slides_content.setdefault("badge", badge)
+    for slide in slides_content.get("slides", []):
+        if not slide.get("kind"):
+            slide["kind"] = _VISUAL_NOTE_KIND.get(slide.get("visual_note", ""), "cover")
+        if not slide.get("title") and slide.get("headline"):
+            slide["title"] = slide["headline"]
+        if not slide.get("subtitle") and slide.get("subtext"):
+            slide["subtitle"] = slide["subtext"]
+    return slides_content
+
 
 def _make_publisher():
     try:
@@ -101,6 +124,8 @@ async def generate_tournament_overview_carousel(tour: str = "atp") -> dict:
     if not slides_content or not slides_content.get("slides"):
         log.error(f"Falha ao gerar slides de overview {tour.upper()}")
         return {}
+
+    _normalize_draw_slides(slides_content, badge=overview["tournament"])
 
     slides   = slides_content["slides"]
     caption  = slides_content.get("caption", "")
@@ -214,6 +239,8 @@ async def generate_draw_path_carousel(player_name: str, tour: str = "atp") -> di
     if not slides_content or not slides_content.get("slides"):
         log.error(f"Falha ao gerar draw path para {player_name}")
         return {}
+
+    _normalize_draw_slides(slides_content, badge=draw_data["tournament"])
 
     visual_data = {
         "player":      draw_data["player"],
