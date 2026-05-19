@@ -100,11 +100,17 @@ async def generate_carousel(
     for slide in slides:
         kind = slide.get("kind", "")
         if kind in ("cover", "image"):
-            player_query = slide.get("player_image_query") or data.get("player") or ""
+            player_query = slide.get("player_image_query") or slide.get("player") or data.get("player") or ""
             if player_query:
                 img_data = await img_manager.get_player_image(player_query, image_type="any")
                 if img_data and img_data.get("path"):
-                    slide["image"] = _image_to_base64(img_data['path'])
+                    b64 = _image_to_base64(img_data['path'])
+                    if not b64:
+                        log.error(
+                            f"Slide '{kind}': imagem corrompida/inválida para '{player_query}' — abortando"
+                        )
+                        return []
+                    slide["image"] = b64
                 else:
                     log.error(
                         f"Slide '{kind}' sem foto para '{player_query}' — abortando carrossel "

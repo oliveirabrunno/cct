@@ -33,8 +33,9 @@ class ImageManager:
             return self._get_placeholder("Desconhecido")
 
         # Carregar filenames usados recentemente do SQLite (evita repetição entre runs)
+        # TTL de 48h: previne mesma foto em posts consecutivos sem bloquear reuso diário
         from utils.dedup import get_used_image_filenames, register_used_image
-        used_files = get_used_image_filenames(player_name)
+        used_files = get_used_image_filenames(player_name, hours=48)
 
         # 1. Cache local — foto já baixada e verificada
         cached = self.cache.get_unused(
@@ -48,16 +49,22 @@ class ImageManager:
             log.info(f"Cache local: {player_name} → {cached['path'].split('/')[-1]}")
             return cached
 
-
-
         if not download_if_missing:
             return self._get_placeholder(player_name)
 
-        # ⚠️ try_restore_from_metadata DESABILITADO — causava reciclagem de fotos antigas.
-        # Quando o cache local está vazio (GitHub Actions cache miss), a função re-baixava
-        # a MESMA foto do url_original do metadata.json, resultando em imagens repetidas
-        # no feed (ex: mesma foto do Sinner com troféu em 4 posts diferentes).
-        # Agora vamos direto para fontes online para garantir imagens frescas.
+        # 1b. Cache miss no GitHub Actions: nenhum arquivo físico existe mas metadata.json
+        # tem url_original — restaurar a foto sem precisar ir ao SerpAPI/DDG.
+        # Habilitado apenas quando NÃO há nenhum arquivo local (evita reciclagem: se
+        # arquivos existem mas estão em exclude_filenames, prefere baixar algo novo).
+        if not self.cache.has_any_local_image(player_name):
+            restored = await self.cache.try_restore_from_metadata(
+                player_name, image_type, exclude_filenames=used_files
+            )
+            if restored:
+                self._used_paths.add(restored["path"])
+                register_used_image(player_name, restored["filename"])
+                log.info(f"Restaurado de metadata: {player_name} → {restored['path'].split('/')[-1]}")
+                return restored
 
         # 2. Google Images (via SerpAPI) — fonte primária para pegar fotos do saibro/temporada atual
         result = await self._try_google_images(

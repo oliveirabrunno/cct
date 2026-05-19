@@ -127,7 +127,7 @@ async def generate_tournament_overview_carousel(tour: str = "atp") -> dict:
         "tour":        tour.upper(),
     }
 
-    image_paths = await generate_carousel("draw_overview", visual_data, slides)
+    image_paths = await generate_carousel("draw_overview", visual_data, slides_content)
 
     label = f"draw_overview_{tour}"
     return {
@@ -136,7 +136,7 @@ async def generate_tournament_overview_carousel(tour: str = "atp") -> dict:
         "image_paths": image_paths,
         "caption":     caption,
         "hashtags":    hashtags,
-        "slides_data": slides,
+        "slides_data": slides_content.get("slides", []),
         "overview":    overview,
         "label":       label,
     }
@@ -215,14 +215,13 @@ async def generate_draw_path_carousel(player_name: str, tour: str = "atp") -> di
         log.error(f"Falha ao gerar draw path para {player_name}")
         return {}
 
-    slides   = slides_content["slides"]
     visual_data = {
         "player":      draw_data["player"],
         "player_name": draw_data["player"],
         "tournament":  draw_data["short"],
         "surface":     draw_data["surface"],
     }
-    image_paths = await generate_carousel("draw_path", visual_data, slides)
+    image_paths = await generate_carousel("draw_path", visual_data, slides_content)
 
     return {
         "player":      draw_data["player"],
@@ -230,7 +229,7 @@ async def generate_draw_path_carousel(player_name: str, tour: str = "atp") -> di
         "image_paths": image_paths,
         "caption":     slides_content.get("caption", ""),
         "hashtags":    slides_content.get("hashtags", []),
-        "slides_data": slides,
+        "slides_data": slides_content.get("slides", []),
     }
 
 

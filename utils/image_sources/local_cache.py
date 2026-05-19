@@ -23,6 +23,17 @@ def _slug(name: str) -> str:
 
 class LocalImageCache:
 
+    def has_any_local_image(self, player_name: str) -> bool:
+        """True se existe pelo menos um arquivo físico no cache para este jogador."""
+        slug = _slug(player_name)
+        player_dir = DATA_DIR / slug
+        meta_path = player_dir / "metadata.json"
+        if not meta_path.exists():
+            return False
+        with open(meta_path) as f:
+            meta = json.load(f)
+        return any((player_dir / p["file"]).exists() for p in meta.get("photos", []))
+
     def get(self, player_name: str, image_type: str = "any") -> dict | None:
         return self.get_unused(player_name, image_type, exclude_paths=set())
 

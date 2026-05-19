@@ -34,18 +34,17 @@ async def generate_trend_carousel(
         log.error(f"Falha ao gerar slides para {player_name}")
         return {}
 
-    slides = slides_content["slides"]
     caption = slides_content.get("caption", "")
     hashtags = slides_content.get("hashtags", [])
 
-    image_paths = await generate_carousel(prompt_template, data, slides)
+    image_paths = await generate_carousel(prompt_template, data, slides_content)
 
     return {
         "player": player_name,
         "image_paths": image_paths,
         "caption": caption,
         "hashtags": hashtags,
-        "slides_data": slides,
+        "slides_data": slides_content.get("slides", []),
     }
 
 
@@ -64,13 +63,12 @@ async def generate_h2h_carousel(player_a: str, player_b: str, h2h_data: dict) ->
         log.error(f"Falha ao gerar H2H carousel {player_a} vs {player_b}")
         return {}
 
-    slides = slides_content["slides"]
-    image_paths = await generate_carousel("h2h", data, slides)
+    image_paths = await generate_carousel("h2h", data, slides_content)
 
     return {
         "player_a": player_a,
         "player_b": player_b,
         "image_paths": image_paths,
-        "caption": slides_content.get("caption", ""),
-        "hashtags": slides_content.get("hashtags", []),
+        "caption":     slides_content.get("caption", ""),
+        "hashtags":    slides_content.get("hashtags", []),
     }
