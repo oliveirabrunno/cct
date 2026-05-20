@@ -202,7 +202,14 @@ class LocalImageCache:
             await f.write(content)
 
         self._update_metadata(player_dir, player_name, slug, filename, image_type, photo_info)
-        log.info(f"Cache: {player_name} → {file_path}")
+        # Audit log: registrar domínio + source para debug de relevância
+        try:
+            from urllib.parse import urlparse
+            host = urlparse(url).netloc.lower()
+            img_source = photo_info.get("source", "unknown")
+            log.info(f"Cache: {player_name} → {file_path} (domínio={host}, source={img_source})")
+        except Exception:
+            log.info(f"Cache: {player_name} → {file_path}")
         return str(file_path)
 
     def _count_files(self, player_dir: Path, image_type: str) -> int:
