@@ -72,8 +72,10 @@ jobs:
           path: |
             data/database.sqlite
             data/players
-          key: data-cache-v4-${{ steps.get-date.outputs.date }}
-          restore-keys: data-cache-v4-
+          key: data-cache-v5-${{ steps.get-date.outputs.date }}-${{ github.run_id }}
+          restore-keys: |
+            data-cache-v5-${{ steps.get-date.outputs.date }}-
+            data-cache-v5-
 
       - name: Atualizar dados Sackmann
         run: python scripts/update_sackmann.py

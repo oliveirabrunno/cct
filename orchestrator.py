@@ -478,10 +478,73 @@ async def run_ranking():
 
 
 async def _generate_evergreen(publisher):
+    """Conteúdo evergreen quando não há trends: curiosidade histórica + story.
+
+    Antes desta versão, apenas imprimia no log e não publicava nada — em dias
+    calmos o pipeline ficava sem postar nada de relevante.
+    """
+    from datetime import date as _date
+    from generators.content import ContentGenerator, _load_prompt
+    from generators.visual import generate_card_with_player
+    from generators.story import StoryGenerator
+    from publisher.rate_limiter import can_publish_feed_post
+
     content_gen = ContentGenerator()
-    caption = content_gen.generate_caption("curiosidade_tenis", {"tema": "Roland Garros história"})
-    if caption:
-        log.info(f"Evergreen: {caption[:80]}...")
+    system      = _load_prompt("base_voice")
+
+    # Variar tema por dia da semana — 7 temas distintos
+    EVERGREEN_THEMES = [
+        ("recorde-grand-slam", "um recorde improvável de Grand Slam"),
+        ("rivalidade-historica", "uma rivalidade clássica do circuito (ex: Nadal x Federer, Serena x Venus)"),
+        ("zebra-historica", "uma zebra famosa em Grand Slam"),
+        ("bras-no-mundo", "um feito brasileiro no tênis (Guga, Bellucci, Bia, Meligeni, etc.)"),
+        ("curiosidade-superficie", "uma curiosidade técnica da superfície atual"),
+        ("primeira-vez", "um momento de estreia/primeira vez histórica (primeira sul-americana, primeiro asiático, etc.)"),
+        ("fato-bizarro", "um fato bizarro/inusitado do ATP/WTA Tour"),
+    ]
+    theme_key, theme_desc = EVERGREEN_THEMES[_date.today().weekday()]
+
+    if is_duplicate("evergreen", theme_key, hours=24 * 8):
+        log.info(f"Evergreen: tema '{theme_key}' já publicado recentemente — pulando")
+        return
+
+    prompt = (
+        f"Gere um post evergreen sobre {theme_desc}.\n"
+        "REGRAS ABSOLUTAS:\n"
+        "- headline: máx 7 palavras, impactante.\n"
+        "- subtext: contexto histórico, máx 18 palavras.\n"
+        "- player: nome do jogador/atleta principal do fato (para foto).\n"
+        "- caption: legenda Instagram (máx 70 palavras), tom de bar, termina com pergunta.\n"
+        "- Use dados REAIS verificáveis (sem inventar números/datas).\n"
+        "Responda SOMENTE JSON: {\"headline\":\"\",\"subtext\":\"\",\"player\":\"\",\"caption\":\"\"}"
+    )
+
+    raw  = content_gen._call_claude(system, prompt, max_tokens=400)
+    data = content_gen._parse_json_response(raw)
+    if not data or not data.get("headline"):
+        log.info("Evergreen: Claude não retornou conteúdo — pulando")
+        return
+
+    headline = data["headline"]
+    subtext  = data.get("subtext", "")
+    player   = data.get("player", "Carlos Alcaraz")
+    caption  = data.get("caption", headline)
+
+    path = await generate_card_with_player(
+        "evergreen",
+        {"player": player, "tournament": CURRENT_TOURNAMENT_SHORT},
+        {"headline": headline, "subtext": subtext, "visual_note": "foto_action"},
+    )
+    if not path:
+        log.warning(f"Evergreen: card não gerado — foto indisponível para {player}")
+        return
+
+    if can_publish_feed_post():
+        hashtags = ["#tennis", "#tenis", "#ATP", "#WTA", "#cafecomtenis", "#cafecomteniss", "#tennishistory"]
+        ok = await publisher.publish_post(str(path), caption, hashtags)
+        if ok:
+            register_post("evergreen", theme_key, description=headline)
+            log.info(f"Evergreen publicado [{theme_key}]: {headline}")
 
 
 async def run_on_this_day():
@@ -514,32 +577,67 @@ async def run_stat_card():
     """
     Stat chocante do player mais trending — 10:30 BRT.
     Publica 1 card de feed + 1 story poll para a próxima partida.
+
+    Diversidade:
+      - Roda jogadores: se top trending teve stat_card nas últimas 36h, pula para o próximo.
+      - Varia o ângulo do stat por dia da semana (saque/RtBP/superfície/H2H/recorde/momentum/streak).
+      - Dedup por (player + stat_angle) para nunca repetir o mesmo ângulo.
     """
     from generators.content import ContentGenerator, _load_prompt
     from generators.visual import generate_card_with_player
     from generators.story import StoryGenerator
     from publisher.rate_limiter import can_publish_feed_post
+    from datetime import date as _date
+    import hashlib
 
     log.info("=== Stat Card 10:30 BRT ===")
 
     detector = TrendDetector()
     trending = await detector.check_all_players()
 
-    player = trending[0]["player"] if trending else "João Fonseca"
-    log.info(f"Gerando stat card para {player}")
+    # Candidatos: trending + fallback de monitored (rotação se ninguém em trend)
+    from analytics.trend_detector import MONITORED_PLAYERS
+    candidates = [t["player"] for t in trending] + [
+        p for p in MONITORED_PLAYERS.keys() if p not in {t["player"] for t in trending}
+    ]
+
+    # Forçar rotação: pular quem teve stat_card nas últimas 36h
+    player = None
+    for cand in candidates:
+        if not is_duplicate("stat_card", cand, hours=36, check_ig=True):
+            player = cand
+            break
+    if not player:
+        log.info("Stat card: todos os jogadores em dedup — pulando hoje")
+        return
+
+    # Variar ângulo do stat por dia da semana (7 ângulos distintos)
+    STAT_ANGLES = [
+        ("saque",      "estatísticas avançadas de SAQUE (1º saque %, aces, BP salvos)"),
+        ("retorno",    "estatísticas avançadas de RETORNO (% BP convertidos, vencedores no retorno)"),
+        ("superficie", "domínio na superfície atual (record de vitórias em saibro/grama/dura)"),
+        ("streak",     "sequência de vitórias atual ou recorde recente"),
+        ("h2h",        "comparativo histórico contra rival direto da temporada"),
+        ("clutch",     "performance em momentos decisivos (tie-breaks, sets longos, BP)"),
+        ("temporada",  "ranking/posição na temporada (vitórias, finais, prêmio em dinheiro)"),
+    ]
+    angle_key, angle_desc = STAT_ANGLES[_date.today().weekday()]
+    log.info(f"Stat card: {player} | ângulo: {angle_key}")
 
     content_gen = ContentGenerator()
     system = _load_prompt("base_voice")
 
     prompt = (
         f"Gere um card de STAT CHOCANTE para {player} em {CURRENT_TOURNAMENT_SHORT}.\n"
+        f"ÂNGULO DO STAT (obrigatório): {angle_desc}.\n"
         "REGRAS ABSOLUTAS:\n"
-        "- headline: stat impactante, máx 8 palavras, SEM introdução\n"
-        "- subtext: comparação histórica, máx 15 palavras\n"
-        "- player_full: nome completo do jogador\n"
-        "- caption: legenda Instagram (máx 70 palavras), tom de bar, CTA invisível\n"
-        "Se for Fonseca/brasileiro: compare com Nadal/Alcaraz na mesma idade.\n"
-        "Se for top 3 ATP/WTA: compare com pico histórico.\n"
+        "- headline: stat impactante, máx 8 palavras, SEM introdução.\n"
+        "- subtext: contexto/comparação, máx 15 palavras.\n"
+        "- player_full: nome completo do jogador.\n"
+        "- caption: legenda Instagram (máx 70 palavras), tom de bar, CTA invisível.\n"
+        "- NÃO use comparações batidas (ex: 'mais jovem desde Nadal') — busque ângulo INÉDITO.\n"
+        "- O stat DEVE ser sobre o ângulo informado, não outro.\n"
+        "- Se for fim de semana (sábado/domingo): foque em recorde único da temporada.\n"
         "Responda SOMENTE JSON: {\"headline\":\"\",\"subtext\":\"\",\"player_full\":\"\",\"caption\":\"\"}"
     )
 
@@ -563,9 +661,13 @@ async def run_stat_card():
     if player_posted_recently(player, hours=4):
         log.info(f"Stat card para {player} bloqueado — jogador em post recente (gate universal)")
         return
-    # Dedup por tipo: bloqueia stat_card duplicado nas últimas 18h
-    if is_duplicate("stat_card", player, hours=18, check_ig=True):
-        log.info(f"Stat card para {player} já publicado hoje — pulando")
+
+    # Dedup por ângulo: bloqueia a mesma combinação (player + ângulo) nas últimas 14 dias.
+    # Garante que o headline real não se repete, mesmo se o jogador aparecer várias vezes.
+    headline_norm = headline.lower().strip()
+    stat_signature = hashlib.sha256(f"{player}::{angle_key}::{headline_norm}".encode()).hexdigest()[:12]
+    if is_duplicate("stat_card_angle", stat_signature, hours=24 * 14, check_ig=False):
+        log.info(f"Stat card já publicado para {player}/{angle_key}/{headline_norm[:40]} — pulando")
         return
 
     path = await generate_card_with_player(
@@ -581,7 +683,8 @@ async def run_stat_card():
     if path and can_publish_feed_post():
         ok = await publisher.publish_post(str(path), caption, hashtags)
         if ok:
-            register_post("stat_card", player, description=headline)
+            register_post("stat_card", player, description=f"[{angle_key}] {headline}")
+            register_post("stat_card_angle", stat_signature, description=headline)
         log.info(f"Stat card publicado: {headline}")
 
         story_gen = StoryGenerator()
@@ -837,6 +940,60 @@ async def run_stories():
     log.info(f"Stories publicados: {len(published)}")
 
 
+async def run_h2h_poll():
+    """
+    Story de H2H "Quem leva?" — engajamento.
+    Escolhe dois jogadores em trend (ou top da temporada), gera poll story com
+    contexto de H2H + comparativo no torneio atual. Publica como story do feed.
+    """
+    from generators.story import StoryGenerator
+    from scrapers.atp_iq import get_h2h_card
+
+    log.info("=== H2H Poll Story ===")
+    detector = TrendDetector()
+    trending = await detector.check_all_players()
+    publisher = _make_publisher()
+    story_gen = StoryGenerator()
+
+    # Selecionar dois jogadores: top 2 trending, ou top trending + Fonseca/Sinner/Alcaraz
+    if len(trending) >= 2:
+        p1, p2 = trending[0]["player"], trending[1]["player"]
+    elif len(trending) == 1:
+        p1 = trending[0]["player"]
+        # Fallback: pegar segundo jogador da lista de monitorados (não o p1)
+        from analytics.trend_detector import MONITORED_PLAYERS
+        p2 = next((p for p in MONITORED_PLAYERS if p != p1), "Carlos Alcaraz")
+    else:
+        log.info("H2H Poll: sem trending suficiente — pulando")
+        return
+
+    # Dedup: não repetir o mesmo par H2H em 48h
+    pair_key = "::".join(sorted([p1, p2]))
+    if is_duplicate("h2h_poll", pair_key, hours=48, check_ig=False):
+        log.info(f"H2H poll já publicado para {p1} vs {p2} — pulando")
+        return
+
+    # Verificar se H2H tem dados reais (>= 1 confronto histórico)
+    try:
+        h2h_data = get_h2h_card(p1, p2, tournament_name=CURRENT_TOURNAMENT_SHORT)
+        h2h_raw = h2h_data.get("raw", {})
+        if h2h_raw.get("total", 0) < 1:
+            log.info(f"H2H poll: {p1} vs {p2} sem confrontos — pulando")
+            return
+    except Exception as e:
+        log.warning(f"H2H poll: get_h2h_card falhou ({p1} vs {p2}): {e}")
+        return
+
+    poll = await story_gen.generate_h2h_poll_story(
+        p1, p2,
+        {"tournament": CURRENT_TOURNAMENT_SHORT, "round": "Próximo confronto"},
+    )
+    if poll and poll.get("image_path"):
+        await publisher.publish_story(poll["image_path"])
+        register_post("h2h_poll", pair_key, description=f"{p1} vs {p2}")
+        log.info(f"H2H poll publicado: {p1} vs {p2}")
+
+
 async def run_test_draw():
     """Testa draw overview ATP sem publicar."""
     from generators.draw_path import generate_tournament_overview_carousel
@@ -902,6 +1059,7 @@ async def main():
         "ranking":        run_ranking,
         "draw-path":      run_draw_path,
         "stories":        run_stories,
+        "h2h-poll":       run_h2h_poll,
         "rg-launch":      run_rg_launch,
         "calendar":       run_calendar,
         "check-meta":     run_check_meta,

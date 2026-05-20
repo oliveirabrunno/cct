@@ -1,11 +1,12 @@
-name: Monitor Ao Vivo — Breaking News
+name: Afternoon Insight — 15h BRT
 
-# Verifica resultados a cada 30 minutos e publica breaking cards imediatamente.
-# Stories de breaking não consomem quota de feed posts.
+# Publica 1 card de insight educativo às 15:00 BRT (18:00 UTC)
+# Seleção inteligente: H2H pré-jogo → stats ATP avançados → líderes da temporada
+# Antes deste workflow, o handler run_afternoon_insight nunca rodava automaticamente
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "0 18 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -13,9 +14,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  monitor:
+  afternoon_insight:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +52,9 @@ jobs:
           key: playwright-${{ runner.os }}-chromium
           restore-keys: playwright-${{ runner.os }}-
 
+      - name: Install system deps
+        run: sudo apt-get install -y ffmpeg --no-install-recommends
+
       - name: Install Python deps
         run: pip install -r requirements.txt
 
@@ -75,30 +79,20 @@ jobs:
             data-cache-v5-${{ steps.get-date.outputs.date }}-
             data-cache-v5-
 
-      - name: "🔍 Diagnóstico do pipeline de imagem"
+      - name: Gerar Afternoon Insight (H2H / Stats / Season Leaders)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
           META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
-        run: python scripts/debug_image_pipeline.py
+        run: python orchestrator.py afternoon-insight
 
-      - name: Checar scores ao vivo
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
-          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
-          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
-          META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
-          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
-        run: python orchestrator.py live
-
-      - name: Upload breaking content
+      - name: Upload output
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: live-${{ github.run_id }}
+          name: afternoon-insight-${{ github.run_id }}
           path: output/queue/
-          retention-days: 1
+          retention-days: 3
