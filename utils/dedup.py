@@ -283,15 +283,21 @@ def register_post(
 
 
 def register_used_image(player: str, filename: str) -> None:
-    """Registra arquivo de imagem como usado (evita repetição por 7 dias)."""
-    key = f"{_normalize_string(player)}::{filename}"
+    """Registra arquivo de imagem como usado (evita repetição).
+
+    Armazena o NOME NORMALIZADO do jogador para casar com get_used_image_filenames,
+    que também normaliza. Antes desta correção, dedup nunca funcionava (gravava
+    "João Fonseca" e consultava "joao fonseca").
+    """
+    norm_player = _normalize_string(player)
+    key = f"{norm_player}::{filename}"
     h = hashlib.sha256(key.encode()).hexdigest()[:16]
     with _get_conn() as conn:
         try:
             conn.execute(
                 "INSERT OR IGNORE INTO image_urls (url_hash, url_preview, player, source, used_at) "
                 "VALUES (?, ?, ?, ?, ?)",
-                (h, filename, player, "file", datetime.now().isoformat())
+                (h, filename, norm_player, "file", datetime.now().isoformat())
             )
             conn.commit()
         except Exception:

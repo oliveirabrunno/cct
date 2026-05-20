@@ -182,6 +182,22 @@ class LocalImageCache:
         if len(content) < 5000:
             raise ValueError(f"Imagem muito pequena ({len(content)}B) — provavelmente erro ou placeholder")
 
+        # Validação visual: tamanho e aspect ratio (defesa contra banners/faixas/imagens inválidas)
+        try:
+            from io import BytesIO
+            from PIL import Image as _PILImage
+            with _PILImage.open(BytesIO(content)) as im:
+                w, h = im.size
+            if w < 600 or h < 600:
+                raise ValueError(f"Imagem com dimensões pequenas: {w}x{h} (esperado >=600)")
+            ratio = max(w, h) / max(1, min(w, h))
+            if ratio > 2.5:
+                raise ValueError(f"Aspect ratio extremo {ratio:.2f} ({w}x{h}) — possível banner/faixa")
+        except ValueError:
+            raise
+        except Exception as e:
+            log.debug(f"Validação PIL falhou (não bloqueante): {e}")
+
         async with aiofiles.open(file_path, "wb") as f:
             await f.write(content)
 

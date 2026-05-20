@@ -126,8 +126,9 @@ class StoryGenerator:
     ) -> dict:
         canvas = Image.new("RGB", (self.STORY_W, self.STORY_H), self.BRAND_DARK)
 
-        img_a_data = await self.img_manager.get_player_image(player_a, "action")
-        img_b_data = await self.img_manager.get_player_image(player_b, "action")
+        tournament = match_context.get("tournament", "")
+        img_a_data = await self.img_manager.get_player_image(player_a, "action", tournament_name=tournament or None)
+        img_b_data = await self.img_manager.get_player_image(player_b, "action", tournament_name=tournament or None)
 
         half_h = self.STORY_H // 2
 
@@ -204,8 +205,8 @@ class StoryGenerator:
 
     # ─── FALLBACKS PILLOW (quando Puppeteer/Node não disponível) ─────────────
 
-    async def _pillow_curiosity_story(self, stat: str, context: str, player_name: str) -> str | None:
-        canvas = await self._build_base_canvas(player_name, "action") if player_name else \
+    async def _pillow_curiosity_story(self, stat: str, context: str, player_name: str, tournament: str = "") -> str | None:
+        canvas = await self._build_base_canvas(player_name, "action", tournament=tournament) if player_name else \
                  Image.new("RGB", (self.STORY_W, self.STORY_H), self.BRAND_DARK)
         canvas = self._apply_gradient(canvas, start_at=0.25)
         canvas = self._draw_label(canvas, "VOCÊ SABIA?", y_frac=0.38)
@@ -222,7 +223,7 @@ class StoryGenerator:
         loser      = match_result.get("loser", "")
         score      = match_result.get("score", "")
         tournament = match_result.get("tournament", "")
-        canvas = await self._build_base_canvas(winner, "action", fallback_player=loser)
+        canvas = await self._build_base_canvas(winner, "action", fallback_player=loser, tournament=tournament)
         canvas = self._apply_gradient(canvas, start_at=0.30)
         canvas = self._draw_label(canvas, "RESULTADO", y_frac=0.47)
         canvas = self._draw_headline(canvas, f"{winner} VENCE", y_frac=0.52)
@@ -239,7 +240,8 @@ class StoryGenerator:
         return output
 
     async def _pillow_teaser_story(self, post_data: dict, player_name: str) -> str | None:
-        canvas = await self._build_base_canvas(player_name, "action")
+        tournament = post_data.get("tournament", "")
+        canvas = await self._build_base_canvas(player_name, "action", tournament=tournament)
         canvas = self._apply_gradient(canvas, start_at=0.40)
         hook = post_data.get("story_hook") or post_data.get("headline", "")
         if hook:
@@ -252,21 +254,21 @@ class StoryGenerator:
 
     # ─── HELPERS INTERNOS ─────────────────────────────────────────────────────
 
-    async def _build_base_canvas(self, player_name: str, image_type: str, fallback_player: str = "") -> Image.Image:
+    async def _build_base_canvas(self, player_name: str, image_type: str, fallback_player: str = "", tournament: str = "") -> Image.Image:
         canvas = Image.new("RGB", (self.STORY_W, self.STORY_H), self.BRAND_DARK)
         if not player_name:
             return self._apply_branded_bg(canvas)
 
-        img_data = await self.img_manager.get_player_image(player_name, image_type)
+        img_data = await self.img_manager.get_player_image(player_name, image_type, tournament_name=tournament or None)
 
         if not img_data or not img_data.get("path"):
             # Tentar tipo "any" antes de ir para fallback_player
-            img_data = await self.img_manager.get_player_image(player_name, "any")
+            img_data = await self.img_manager.get_player_image(player_name, "any", tournament_name=tournament or None)
 
         if not img_data or not img_data.get("path"):
             if fallback_player:
                 log.warning(f"Sem foto para {player_name} — tentando foto do adversário {fallback_player}")
-                img_data = await self.img_manager.get_player_image(fallback_player, image_type)
+                img_data = await self.img_manager.get_player_image(fallback_player, image_type, tournament_name=tournament or None)
 
         if img_data and img_data.get("path"):
             try:
@@ -281,15 +283,34 @@ class StoryGenerator:
         return self._apply_branded_bg(canvas)
 
     def _apply_branded_bg(self, canvas: Image.Image) -> Image.Image:
-        """Aplica gradiente de marca quando não há foto — evita tela totalmente preta."""
-        overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-        draw = ImageDraw.Draw(overlay)
-        # Gradiente vertical: accent (lima) suave no topo → preto na base
-        accent_r, accent_g, accent_b = self.BRAND_ACCENT
-        for y in range(int(canvas.height * 0.5)):
-            alpha = int(60 * (1 - y / (canvas.height * 0.5)))
-            draw.line([(0, y), (canvas.width, y)], fill=(accent_r, accent_g, accent_b, alpha))
-        return Image.alpha_composite(canvas.convert("RGBA"), overlay).convert("RGB")
+        """Aplica gradiente de marca quando não há foto — evita tela totalmente preta.
+
+        Gradiente diagonal: accent (lima) no canto superior esquerdo,
+        atravessando azul-marinho profundo no meio, terminando em brand_dark.
+        Resultado visualmente próximo a um template — nunca parece "tela preta".
+        """
+        w, h = canvas.size
+        bg = Image.new("RGB", (w, h), self.BRAND_DARK)
+        draw = ImageDraw.Draw(bg)
+        # Cores intermediárias para o gradiente
+        accent = self.BRAND_ACCENT       # lima (top)
+        mid    = (16, 36, 60)            # azul profundo (meio)
+        dark   = self.BRAND_DARK         # preto-quase (base)
+        # Gradiente vertical em 3 stops
+        for y in range(h):
+            t = y / max(1, h - 1)
+            if t < 0.18:
+                f = t / 0.18
+                r = int(accent[0] * (1 - f) + mid[0] * f)
+                g = int(accent[1] * (1 - f) + mid[1] * f)
+                b = int(accent[2] * (1 - f) + mid[2] * f)
+            else:
+                f = (t - 0.18) / 0.82
+                r = int(mid[0] * (1 - f) + dark[0] * f)
+                g = int(mid[1] * (1 - f) + dark[1] * f)
+                b = int(mid[2] * (1 - f) + dark[2] * f)
+            draw.line([(0, y), (w, y)], fill=(r, g, b))
+        return bg
 
     def _fit_to_story(self, img: Image.Image, target: tuple = None) -> Image.Image:
         target = target or (self.STORY_W, self.STORY_H)

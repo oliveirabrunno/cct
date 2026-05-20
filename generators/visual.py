@@ -4,6 +4,7 @@ import subprocess
 import time
 import re
 import base64
+from datetime import date
 from pathlib import Path
 from utils.image_manager import ImageManager
 from utils.logger import get_logger
@@ -97,12 +98,28 @@ async def generate_carousel(
             log.error("Nenhum slide encontrado no JSON")
             return []
         
+    # Contexto compartilhado: torneio e superfície vêm do data; também tenta slides_data
+    tournament = data.get("tournament") or slides_data.get("tournament") or slides_data.get("badge") or ""
+    surface    = data.get("surface")    or slides_data.get("surface", "")
+    # Override sempre com "tennis" para evitar buscas genéricas que retornam NSFW/lixo
+    base_override = None
+    if surface and surface != "neutral":
+        base_override_suffix = f"tennis {tournament} {surface} {date.today().year}".strip()
+    else:
+        base_override_suffix = f"tennis {tournament} {date.today().year}".strip()
+
     for slide in slides:
         kind = slide.get("kind", "")
         if kind in ("cover", "image"):
             player_query = slide.get("player_image_query") or slide.get("player") or data.get("player") or ""
             if player_query:
-                img_data = await img_manager.get_player_image(player_query, image_type="any")
+                override = f"{player_query} {base_override_suffix}".strip()
+                img_data = await img_manager.get_player_image(
+                    player_query,
+                    image_type="any",
+                    tournament_name=tournament or None,
+                    search_override=override,
+                )
                 if img_data and img_data.get("path"):
                     b64 = _image_to_base64(img_data['path'])
                     if not b64:
@@ -322,16 +339,19 @@ async def generate_story(
     img_manager = ImageManager()
 
     if player_name:
+        tournament = story_data.get("tournament") or story_data.get("kicker") or ""
         img_data = await img_manager.get_player_image(
             player_name,
             image_type="action",
-            tournament_name=story_data.get("tournament"),
+            tournament_name=tournament or None,
             year=year,
         )
-        # Fallback: tentar qualquer tipo de imagem se action não encontrada
+        # Fallback: tentar qualquer tipo de imagem se action não encontrada (mantendo o torneio)
         if not (img_data and img_data.get("path")):
             log.warning(f"Story: sem action shot para '{player_name}' — tentando any")
-            img_data = await img_manager.get_player_image(player_name, image_type="any")
+            img_data = await img_manager.get_player_image(
+                player_name, image_type="any", tournament_name=tournament or None
+            )
 
         if img_data and img_data.get("path"):
             b64 = _image_to_base64(img_data["path"])

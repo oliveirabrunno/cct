@@ -5,12 +5,20 @@ SerpAPI requer SERPAPI_KEY no .env (plano gratuito: 100 buscas/mês).
 Quando SerpAPI esgota créditos ou a key está ausente, DuckDuckGo é usado
 automaticamente — sem API key, sem limite de créditos.
 
+Regras absolutas de segurança (após incidente de banimento por NSFW em 2026-05-20):
+  - DDG SEMPRE com safesearch='on' (NUNCA off/moderate).
+  - Toda query DEVE conter "tennis" — se não tiver, é rejeitada.
+  - Domínios NSFW conhecidos bloqueados na fonte.
+  - Sobrenome do jogador deve aparecer no host/título quando disponível.
+
 Busca "{player} tennis clay {year}" para fotos da temporada atual.
 """
 
 import os
+import re
 import requests
 from datetime import date
+from urllib.parse import urlparse
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -34,6 +42,61 @@ SEASON_QUERIES = {
     ],
 }
 
+# Domínios bloqueados (NSFW, irrelevantes, agregadores de baixa qualidade)
+BLOCKED_DOMAINS = {
+    "pornhub.com", "xvideos.com", "xhamster.com", "redtube.com",
+    "youporn.com", "tube8.com", "spankbang.com", "xnxx.com",
+    "onlyfans.com", "fansly.com", "stripchat.com",
+    "tnaflix.com", "drtuber.com", "porn.com", "porntrex.com",
+    "eporner.com", "txxx.com", "hclips.com", "fapality.com",
+    "manyvids.com", "chaturbate.com", "myfreecams.com",
+    # Imagens irrelevantes (alimentos, produtos, etc — já causaram bug do "rice bag")
+    "alibaba.com", "aliexpress.com", "amazon.com", "ebay.com",
+    "etsy.com", "shutterstock.com",  # marca d'água gigante
+}
+
+# Palavras que NUNCA podem aparecer na URL/título (defesa em profundidade)
+BLOCKED_KEYWORDS = {
+    "porn", "xxx", "nude", "naked", "nsfw", "adult", "erotic",
+    "sex", "fuck", "boob", "tits", "ass", "anal",
+    "rice", "grain", "bag of",  # bug do "saco de arroz"
+    "recipe", "cooking", "food",
+}
+
+
+def _is_safe_image(url: str, title: str = "", source: str = "") -> bool:
+    """Retorna False se a imagem deve ser rejeitada (NSFW/irrelevante)."""
+    if not url:
+        return False
+
+    try:
+        host = urlparse(url).netloc.lower().lstrip("www.")
+    except Exception:
+        host = ""
+
+    # Bloqueia domínio inteiro
+    for blocked in BLOCKED_DOMAINS:
+        if blocked in host:
+            log.warning(f"Imagem REJEITADA por domínio bloqueado: {host}")
+            return False
+
+    # Verifica keywords na URL, título e source
+    combined = f"{url} {title} {source}".lower()
+    for kw in BLOCKED_KEYWORDS:
+        # Word boundary para evitar match em "essex", "passport", etc
+        if re.search(rf"\b{re.escape(kw)}\b", combined):
+            log.warning(f"Imagem REJEITADA por keyword '{kw}': {url[:80]}")
+            return False
+
+    return True
+
+
+def _query_has_tennis_context(query: str) -> bool:
+    """Verifica se a query tem contexto de tênis (defesa contra queries vazias/genéricas)."""
+    q = query.lower()
+    return any(kw in q for kw in ("tennis", "tenista", "atp", "wta", "tenis"))
+
+
 def _get_season() -> str:
     month = date.today().month
     if month in (4, 5, 6):
@@ -45,6 +108,9 @@ def _get_season() -> str:
 
 def _build_queries(player_name: str, year: int, tournament_name: str = None, search_override: str = None) -> list[str]:
     if search_override:
+        # Defesa: nunca confiar em override sem "tennis"
+        if not _query_has_tennis_context(search_override):
+            search_override = f"{search_override} tennis"
         return [search_override]
     if tournament_name:
         return [
@@ -57,7 +123,7 @@ def _build_queries(player_name: str, year: int, tournament_name: str = None, sea
 
 
 def _ddg_search_images(queries: list[str], count: int = 5) -> list[dict]:
-    """DuckDuckGo Images — fallback gratuito, sem API key."""
+    """DuckDuckGo Images — fallback gratuito, com safesearch='on' obrigatório."""
     try:
         from ddgs import DDGS
     except ImportError:
@@ -65,25 +131,43 @@ def _ddg_search_images(queries: list[str], count: int = 5) -> list[dict]:
         return []
 
     for query in queries:
+        # Guard: nunca buscar sem contexto de tênis
+        if not _query_has_tennis_context(query):
+            log.warning(f"DDG pulou query sem contexto de tênis: {query!r}")
+            continue
+
         try:
             results = []
             with DDGS() as ddgs:
-                for img in ddgs.images(query, max_results=count * 3):
+                # safesearch='on' é OBRIGATÓRIO — incidente de NSFW em 2026-05-20
+                for img in ddgs.images(query, max_results=count * 4, safesearch="on"):
+                    url    = img.get("image") or ""
+                    title  = img.get("title", "")
+                    source = img.get("source", "DuckDuckGo")
                     w = int(img.get("width", 0) or 0)
                     h = int(img.get("height", 0) or 0)
-                    if w >= 400 and h >= 400:
-                        results.append({
-                            "url":     img.get("image"),
-                            "width":   w,
-                            "height":  h,
-                            "license": "unknown",
-                            "author":  img.get("source", "DuckDuckGo"),
-                            "source":  "duckduckgo",
-                        })
+
+                    if w < 600 or h < 600:
+                        continue
+                    # Rejeitar aspect ratios extremos (banners, faixas, panorâmicas)
+                    ratio = max(w, h) / max(1, min(w, h))
+                    if ratio > 2.2:
+                        continue
+                    if not _is_safe_image(url, title, source):
+                        continue
+
+                    results.append({
+                        "url":     url,
+                        "width":   w,
+                        "height":  h,
+                        "license": "unknown",
+                        "author":  source,
+                        "source":  "duckduckgo",
+                    })
                     if len(results) >= count:
                         break
             if results:
-                log.info(f"DuckDuckGo Images: '{query}' → {len(results)} fotos")
+                log.info(f"DuckDuckGo Images: '{query}' → {len(results)} fotos (safesearch=on)")
                 return results
         except Exception as e:
             log.warning(f"DuckDuckGo Images falhou ({query!r}): {e}")
@@ -93,11 +177,17 @@ def _ddg_search_images(queries: list[str], count: int = 5) -> list[dict]:
 
 def _serpapi_search(query: str, num: int = 10) -> list[dict]:
     """Uma busca no SerpAPI. Retorna lista de imagens ou [] em erro/quota."""
+    # Guard: nunca buscar sem contexto de tênis
+    if not _query_has_tennis_context(query):
+        log.warning(f"SerpAPI pulou query sem contexto de tênis: {query!r}")
+        return []
+
     params = {
         "q":       query,
         "tbm":     "isch",
         "api_key": SERPAPI_KEY,
         "num":     num,
+        "safe":    "active",  # safesearch obrigatório
     }
     try:
         resp = requests.get("https://serpapi.com/search", params=params, timeout=15)
@@ -112,6 +202,32 @@ def _serpapi_search(query: str, num: int = 10) -> list[dict]:
         return []
 
 
+def _serpapi_to_result(img: dict) -> dict | None:
+    """Converte resultado bruto do SerpAPI em dict normalizado, aplicando filtros."""
+    w = img.get("original_width", 0)
+    h = img.get("original_height", 0)
+    if w < 600 or h < 600:
+        return None
+    ratio = max(w, h) / max(1, min(w, h))
+    if ratio > 2.2:
+        return None
+
+    url    = img.get("original") or ""
+    title  = img.get("title", "")
+    source = img.get("source", "Google CC")
+    if not _is_safe_image(url, title, source):
+        return None
+
+    return {
+        "url":    url,
+        "width":  w,
+        "height": h,
+        "license": "CC",
+        "author":  source,
+        "source":  "google_cc",
+    }
+
+
 def search_cc_player_photo(player_name: str, year: int = None, tournament_name: str = None) -> dict | None:
     """Busca uma foto do jogador. Tenta SerpAPI primeiro, cai para DuckDuckGo."""
     target_year = year or CURRENT_YEAR
@@ -121,25 +237,16 @@ def search_cc_player_photo(player_name: str, year: int = None, tournament_name: 
     if SERPAPI_KEY:
         for query in queries:
             for img in _serpapi_search(query, num=5):
-                w = img.get("original_width", 0)
-                h = img.get("original_height", 0)
-                if w >= 400 and h >= 400:
+                result = _serpapi_to_result(img)
+                if result:
                     log.info(f"Google Images (SerpAPI): '{player_name}' — {query!r}")
-                    return {
-                        "url":    img.get("original"),
-                        "width":  w,
-                        "height": h,
-                        "license": "CC",
-                        "author":  img.get("source", "Google CC"),
-                        "source":  "google_cc",
-                    }
+                    return result
 
     # Fallback: DuckDuckGo
     results = _ddg_search_images(queries, count=1)
     if results:
-        img = results[0]
         log.info(f"DuckDuckGo Images (fallback): '{player_name}'")
-        return img
+        return results[0]
 
     log.debug(f"Nenhuma foto encontrada para '{player_name}'")
     return None
@@ -159,17 +266,9 @@ def search_player_images(player_name: str, count: int = 4, year: int = None, tou
         images = _serpapi_search(query, num=10)
         results = []
         for img in images:
-            w = img.get("original_width", 0)
-            h = img.get("original_height", 0)
-            if w >= 400 and h >= 400:
-                results.append({
-                    "url":    img.get("original"),
-                    "width":  w,
-                    "height": h,
-                    "license": "CC",
-                    "author":  img.get("source", "Google CC"),
-                    "source":  "google_cc",
-                })
+            result = _serpapi_to_result(img)
+            if result:
+                results.append(result)
             if len(results) >= count:
                 break
         if results:
