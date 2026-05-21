@@ -2,18 +2,26 @@
 Scores ao vivo de tênis via Flashscore (Playwright).
 Detecta resultados de partidas e dispara geração de breaking news.
 
-FILTRO DE FRESCOR: só retorna partidas das últimas MAX_MATCH_AGE_HOURS horas.
-Isso evita que jogos históricos de 2025 ou anteriores sejam postados como breaking news.
+FILTROS DE SEGURANÇA:
+  - FRESCOR: só retorna partidas das últimas MAX_MATCH_AGE_HOURS horas.
+  - SINGLES ONLY: ignora duplas (nomes com '/', torneios com 'doubles').
+  - SEM TIMESTAMP: assume VELHO por segurança (melhor perder do que postar lixo).
+
+Incidentes corrigidos:
+  - 2026-05-21: duplas "Arneodo def Fritz" e "Gonzalez-Galino def Alcaraz" publicadas
+    como se fossem resultados de singles.
 """
 
 import asyncio
+import re
 from datetime import datetime, timedelta, timezone
 from utils.logger import get_logger
 
 log = get_logger(__name__)
 
-# Partidas mais velhas que este limite são ignoradas pelo monitor ao vivo
-MAX_MATCH_AGE_HOURS = 48
+# Partidas mais velhas que este limite são ignoradas pelo monitor ao vivo.
+# 6h é suficiente para breaking news — resultados de ontem não são notícia.
+MAX_MATCH_AGE_HOURS = 6
 
 FLASHSCORE_TENNIS_URL = "https://www.flashscore.com/tennis/"
 
@@ -130,6 +138,45 @@ def _resolve_full_name(abbreviated: str) -> str:
     return abbreviated
 
 
+def _is_doubles_match(m: dict) -> bool:
+    """
+    Detecta se a partida é de duplas.
+
+    Sinais de dupla:
+      - Nome do jogador contém '/' (ex: 'Arneodo / Nys', 'Gonzalez / Galino')
+      - Torneio contém 'doubles', 'dobles', 'doppio', 'doppel'
+      - Nome contém ',' seguido de espaço e outro nome (formato alternativo)
+
+    Adicionado após incidente de 2026-05-21: duplas publicadas como singles.
+    """
+    player_a = m.get("player_a", "")
+    player_b = m.get("player_b", "")
+    tournament = m.get("tournament", "").lower()
+
+    # '/' no nome é o sinal mais forte de dupla
+    if "/" in player_a or "/" in player_b:
+        log.debug(f"Partida de DUPLAS detectada (nome com '/'): {player_a} vs {player_b}")
+        return True
+
+    # Torneio com "doubles" no nome
+    doubles_keywords = ["doubles", "dobles", "doppio", "doppel", "duplas"]
+    if any(kw in tournament for kw in doubles_keywords):
+        log.debug(f"Partida de DUPLAS detectada (torneio): {tournament}")
+        return True
+
+    # Padrão alternativo: "Sobrenome A. / Sobrenome B." ou "Name, Name"
+    # Múltiplos espaços + pontos sugerem formato de dupla
+    for name in [player_a, player_b]:
+        # Conta quantos pontos (iniciais) aparecem — duplas têm 2+ iniciais
+        initials = re.findall(r'\b[A-Z]\.$', name.strip())
+        parts = name.split()
+        if len(parts) >= 4:  # dupla: "Sobrenome I. Sobrenome2 I."
+            log.debug(f"Partida de DUPLAS suspeita (muitas partes no nome): {name}")
+            return True
+
+    return False
+
+
 def _is_match_fresh(m: dict, max_hours: int = MAX_MATCH_AGE_HOURS) -> bool:
     """
     Verifica se a partida aconteceu dentro do limite de horas.
@@ -137,7 +184,11 @@ def _is_match_fresh(m: dict, max_hours: int = MAX_MATCH_AGE_HOURS) -> bool:
     Fontes de data (em ordem de prioridade):
       1. start_ts — timestamp Unix capturado do atributo data-start-time do Flashscore
       2. date_text — texto de data exibido no cabeçalho do evento (heurística)
-      3. Sem data disponível — assume FRESCO (não descarta por precaução)
+      3. Sem data disponível — assume VELHO (conservador: melhor perder resultado
+         do que publicar jogo antigo)
+
+    Mudança de 2026-05-21: default era "fresco" → mudou para "velho".
+    Motivo: partidas sem timestamp estavam passando e gerando posts de jogos antigos.
     """
     now = datetime.now(tz=timezone.utc)
     cutoff = now - timedelta(hours=max_hours)
@@ -158,17 +209,21 @@ def _is_match_fresh(m: dict, max_hours: int = MAX_MATCH_AGE_HOURS) -> bool:
     date_text = m.get("date_text", "")
     current_year = str(now.year)
     if date_text:
-        # Se o texto menciona explicitamente um ano que não é o atual
-        import re
         years_found = re.findall(r"\b(20\d{2})\b", date_text)
         for y in years_found:
             if y != current_year:
                 log.debug(f"Ignorando partida de {y}: {m.get('player_a')} vs {m.get('player_b')}")
                 return False
+        # Se o texto de data existe e não contém ano errado, considerar fresco
+        return True
 
-    # 3. Sem informação de data — assume fresco (melhor false negative que false positive)
-    log.debug(f"Sem timestamp para '{m.get('player_a')} vs {m.get('player_b')}' — assumindo fresco")
-    return True
+    # 3. Sem informação de data — assume VELHO por segurança
+    # (melhor perder um resultado do que publicar jogo antigo no feed)
+    log.warning(
+        f"Sem timestamp para '{m.get('player_a')} vs {m.get('player_b')}' "
+        "— descartando por segurança (sem data = possível jogo antigo)"
+    )
+    return False
 
 
 async def check_completed_matches(max_age_hours: int = MAX_MATCH_AGE_HOURS) -> list[dict]:
@@ -181,6 +236,11 @@ async def check_completed_matches(max_age_hours: int = MAX_MATCH_AGE_HOURS) -> l
         status = m.get("status", "").lower()
         is_finished = any(s in status for s in ["finished", "fim", "final", "retired", "walkover"])
         if not is_finished:
+            continue
+
+        # ✅ Filtro de duplas: NUNCA publicar resultados de duplas como singles
+        if _is_doubles_match(m):
+            log.info(f"Partida de DUPLAS ignorada: {m.get('player_a')} vs {m.get('player_b')}")
             continue
 
         # ✅ Filtro de frescor: ignorar partidas mais antigas que max_age_hours

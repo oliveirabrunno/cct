@@ -71,6 +71,12 @@ async def find_recent_finished_matches(monitored_players: list[str] = None) -> l
 
             await browser.close()
 
+        # Filtro de duplas: descartar partidas com '/' no nome (formato de dupla)
+        matches = [
+            m for m in matches
+            if "/" not in m.get("player_a", "") and "/" not in m.get("player_b", "")
+        ]
+
         if monitored_players:
             lower = [p.lower() for p in monitored_players]
             matches = [
@@ -82,7 +88,7 @@ async def find_recent_finished_matches(monitored_players: list[str] = None) -> l
                 )
             ]
 
-        log.info(f"Flashscore: {len(matches)} partidas finalizadas de jogadores monitorados")
+        log.info(f"Flashscore: {len(matches)} partidas finalizadas de jogadores monitorados (singles only)")
         return matches
 
     except Exception as e:
