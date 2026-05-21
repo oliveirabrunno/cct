@@ -34,3 +34,4 @@ APScheduler>=3.10.0
 
 # Image search fallback (SerpAPI esgotado → DuckDuckGo)
 ddgs>=9.0.0
+matplotlib==3.10.9

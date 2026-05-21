@@ -120,26 +120,26 @@ async def run_daily_pipeline():
             if ok:
                 register_post("trend_carousel", player, description=result["caption"][:100])
 
-            # Story de teaser automático
-            story_path = await story_gen.generate_teaser_story(
-                post_data={
-                    "headline": result["slides_data"][0].get("headline", ""),
-                    "story_hook": result["caption"][:80],
-                },
-                post_type="trend_carousel",
-                player_name=player,
-            )
-            if story_path:
-                await publisher.publish_story(story_path)
+                # Story de teaser automático
+                story_path = await story_gen.generate_teaser_story(
+                    post_data={
+                        "headline": result["slides_data"][0].get("headline", ""),
+                        "story_hook": result["caption"][:80],
+                    },
+                    post_type="trend_carousel",
+                    player_name=player,
+                )
+                if story_path:
+                    await publisher.publish_story(story_path)
 
-            # Reel automático
-            reel_path = await generate_reel_from_carousel(
-                result["slides_data"], result["image_paths"], player
-            )
-            if reel_path:
-                await publisher.publish_reel(reel_path, result["caption"], result["hashtags"])
+                # Reel automático
+                reel_path = await generate_reel_from_carousel(
+                    result["slides_data"], result["image_paths"], player
+                )
+                if reel_path:
+                    await publisher.publish_reel(reel_path, result["caption"], result["hashtags"])
 
-            log.info(f"{player}: carrossel + story + reel na fila")
+                log.info(f"{player}: carrossel + story + reel na fila")
 
     if not trending:
         log.info("Sem trends — conteúdo evergreen")
@@ -685,37 +685,39 @@ async def run_stat_card():
         if ok:
             register_post("stat_card", player, description=f"[{angle_key}] {headline}")
             register_post("stat_card_angle", stat_signature, description=headline)
-        log.info(f"Stat card publicado: {headline}")
+            log.info(f"Stat card publicado: {headline}")
 
-        story_gen = StoryGenerator()
-        news = search_news(player, hours=8)
-        if news and not is_duplicate("story_teaser", player, hours=18):
-            # Tentar obter adversário real antes de gerar poll
-            next_opponent = _get_next_opponent(player_full)
-            if next_opponent:
-                poll = await story_gen.generate_h2h_poll_story(
-                    player_full,
-                    next_opponent,
-                    {"tournament": CURRENT_TOURNAMENT_SHORT, "round": "próxima rodada"},
-                )
-                if poll and poll.get("image_path"):
-                    await publisher.publish_story(poll["image_path"])
-                    register_post("story_teaser", player)
-            else:
-                # Sem adversário real confirmado → usar teaser story simples
-                teaser = await story_gen.generate_teaser_story(
-                    post_data={
-                        "headline": headline,
-                        "subtext":  subtext,
-                        "kicker":   CURRENT_TOURNAMENT_SHORT,
-                        "surface":  "clay",
-                    },
-                    post_type="stat_card",
-                    player_name=player_full,
-                )
-                if teaser:
-                    await publisher.publish_story(teaser)
-                    register_post("story_teaser", player)
+            story_gen = StoryGenerator()
+            news = search_news(player, hours=8)
+            if news and not is_duplicate("story_teaser", player, hours=18):
+                # Tentar obter adversário real antes de gerar poll
+                next_opponent = _get_next_opponent(player_full)
+                if next_opponent:
+                    poll = await story_gen.generate_h2h_poll_story(
+                        player_full,
+                        next_opponent,
+                        {"tournament": CURRENT_TOURNAMENT_SHORT, "round": "próxima rodada"},
+                    )
+                    if poll and poll.get("image_path"):
+                        await publisher.publish_story(poll["image_path"])
+                        register_post("story_teaser", player)
+                else:
+                    # Sem adversário real confirmado → usar teaser story simples
+                    teaser = await story_gen.generate_teaser_story(
+                        post_data={
+                            "headline": headline,
+                            "subtext":  subtext,
+                            "kicker":   CURRENT_TOURNAMENT_SHORT,
+                            "surface":  "clay",
+                        },
+                        post_type="stat_card",
+                        player_name=player_full,
+                    )
+                    if teaser:
+                        await publisher.publish_story(teaser)
+                        register_post("story_teaser", player)
+        else:
+            log.error(f"Falha ao publicar Stat card: {headline}")
     elif not can_publish_feed_post():
         log.warning("Stat card: quota Meta atingida — conteúdo salvo localmente")
 
