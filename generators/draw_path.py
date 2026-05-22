@@ -189,9 +189,12 @@ async def generate_tournament_overview_carousels(publish: bool = True) -> list[d
             continue
 
         if publish and publisher:
-            await publisher.publish_carousel(
+            published = await publisher.publish_carousel(
                 result["image_paths"], result["caption"], result["hashtags"]
             )
+            if not published:
+                log.error(f"Falha ao publicar draw overview {tour.upper()} — não registrado no dedup")
+                continue
             register_post("draw_overview", dedup_key, description=result["caption"][:100])
             log.info(f"Draw overview {tour.upper()} publicado: {len(result['image_paths'])} slides")
 

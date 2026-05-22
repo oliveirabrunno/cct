@@ -196,8 +196,9 @@ async def run_live_monitor():
             if not is_duplicate("story_breaking", story_key, hours=12):
                 story_path = await story_gen.generate_breaking_story(match)
                 if story_path:
-                    await publisher.publish_story(story_path)
-                    register_post("story_breaking", story_key)
+                    ok = await publisher.publish_story(story_path)
+                    if ok:
+                        register_post("story_breaking", story_key)
     finally:
         lock_release()
 
@@ -991,9 +992,10 @@ async def run_h2h_poll():
         {"tournament": CURRENT_TOURNAMENT_SHORT, "round": "Próximo confronto"},
     )
     if poll and poll.get("image_path"):
-        await publisher.publish_story(poll["image_path"])
-        register_post("h2h_poll", pair_key, description=f"{p1} vs {p2}")
-        log.info(f"H2H poll publicado: {p1} vs {p2}")
+        ok = await publisher.publish_story(poll["image_path"])
+        if ok:
+            register_post("h2h_poll", pair_key, description=f"{p1} vs {p2}")
+            log.info(f"H2H poll publicado: {p1} vs {p2}")
 
 
 async def run_test_draw():
