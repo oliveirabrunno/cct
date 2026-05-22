@@ -1,27 +1,31 @@
 Você vai criar um carrossel de 6 slides sobre um atleta que está em alta agora.
 Use os dados fornecidos — notícias recentes e contexto histórico.
 
-MODELO DE RETENÇÃO (@ri.cred):
+MODELO DE RETENÇÃO (funil obrigatório):
 - Slide 1: PARA O SCROLL. Dado mais surpreendente HOJE. Use números grandes. Crie tensão.
+  NUNCA entregue a informação principal. Gere curiosidade que força o swipe.
   Exemplo: "19 anos. Masters 1000. Cabeça de chave. Roma."
 
-- Slide 2: A NOTÍCIA em contexto. O que aconteceu, por que importa.
+- Slide 2: A NOTÍCIA em contexto. O que aconteceu, por que importa agora.
 
-- Slide 3: CAMINHO À FRENTE. O que está por vir (chave, adversários possíveis).
+- Slide 3: CAMINHO À FRENTE. O que está por vir (chave, adversários projetados).
 
-- Slide 4: HISTÓRIA. O que mudou em relação a onde estava antes.
+- Slide 4: HISTÓRIA. O que mudou vs. onde estava antes.
   "No mesmo torneio ano passado, ele..."
 
-- Slide 5: STAT IMPACTANTE. Um número sobre a carreira/temporada que adiciona profundidade.
+- Slide 5: STAT IMPACTANTE. Número sobre carreira/temporada que contradiz expectativa.
+  Twist inesperado — dado que surpreende mesmo quem acompanha.
 
-- Slide 6: CTA DIRETO. Pergunta que gera comentário + handle.
-  Exemplo: "Fonseca chega à semifinal em Roma?" + @cafecomteniss
+- Slide 6: CTA INVISÍVEL + logo. Pergunta que divide opiniões e gera comentários.
+  Exemplo: "Fonseca chega à semifinal em Roland Garros?" + @cafecomteniss
+  NUNCA "comenta aqui", "salva", "segue" — a pergunta faz o trabalho.
 
-REGRAS DE RETENÇÃO:
+REGRAS DE RETENÇÃO (críticas):
 - Cada slide deve fazer o usuário querer ver o próximo
-- Nunca resolva a tensão antes do último slide
-- Use números específicos
-- Compare com referências conhecidas
+- NUNCA resolva a tensão antes do Slide 6
+- Use números específicos ("47 aces", não "muitos aces")
+- Compare com referências conhecidas ("mais que Federer fez em 2006")
+- Frases curtas — máximo 12 palavras por frase
 
 ATLETA: {player_name}
 SINAIS DE TREND: {trend_signals}
@@ -35,8 +39,11 @@ OUTPUT JSON (responda APENAS o JSON, sem markdown):
     {"slide": 3, "headline": "", "subtext": "", "visual_note": "sem_foto"},
     {"slide": 4, "headline": "", "subtext": "", "visual_note": "foto_clean"},
     {"slide": 5, "headline": "", "subtext": "", "visual_note": "sem_foto"},
-    {"slide": 6, "headline": "", "subtext": "CTA aqui", "visual_note": "logo"}
+    {"slide": 6, "headline": "", "subtext": "pergunta debate invisível aqui", "visual_note": "logo"}
   ],
-  "caption": "legenda completa do post (máx 150 palavras)",
-  "hashtags": ["tennis", "ATP", "cafecomtenis"]
+  "caption": "legenda completa do post — máx 150 palavras, última frase = pergunta debate",
+  "hashtags": ["#tennis", "#tenis", "#ATP", "#WTA", "#cafecomtenis", "#cafecomteniss", "#tenisbrasileiro", "#rolandgarros", "#rolandgarros2026", "#ATLETA_ESPECIFICO", "#SEGUNDO_TAG", "#TERCEIRO_TAG"]
 }
+
+Substitua os 3 últimos hashtags por tags específicas do atleta e torneio (ex: #janniksinner, #sinner, #grandslam).
+Total obrigatório: entre 10 e 15 hashtags.

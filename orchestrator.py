@@ -80,7 +80,7 @@ def _make_publisher():
     return LocalPublisher()
 
 
-async def run_daily_pipeline():
+async def run_daily_pipeline(skip_evergreen: bool = False):
     log.info("=== Pipeline diário iniciado ===")
 
     # Atualiza rankings em tempo real antes de gerar qualquer conteúdo
@@ -142,8 +142,11 @@ async def run_daily_pipeline():
                 log.info(f"{player}: carrossel + story + reel na fila")
 
     if not trending:
-        log.info("Sem trends — conteúdo evergreen")
-        await _generate_evergreen(publisher)
+        if skip_evergreen:
+            log.info("Sem trends detectados — encerrando sem evergreen (modo trends-only)")
+        else:
+            log.info("Sem trends — conteúdo evergreen")
+            await _generate_evergreen(publisher)
 
     log.info("=== Pipeline diário concluído ===")
 
@@ -541,7 +544,12 @@ async def _generate_evergreen(publisher):
         return
 
     if can_publish_feed_post():
-        hashtags = ["#tennis", "#tenis", "#ATP", "#WTA", "#cafecomtenis", "#cafecomteniss", "#tennishistory"]
+        hashtags = [
+            "#tennis", "#tenis", "#ATP", "#WTA",
+            "#cafecomtenis", "#cafecomteniss", "#tenisbrasileiro",
+            "#tennishistory", "#tennisfacts", "#onthisday",
+            "#rolandgarros", "#rolandgarros2026",
+        ]
         ok = await publisher.publish_post(str(path), caption, hashtags)
         if ok:
             register_post("evergreen", theme_key, description=headline)
@@ -650,10 +658,13 @@ async def run_stat_card():
     caption = data.get("caption", headline)
     player_full = data.get("player_full", player)
 
+    _player_tag = f"#{player_full.split()[-1].lower().replace('-', '').replace(' ', '')}"
     hashtags = [
-        "#tennis", "#tenis", "#ATP", "#WTA", "#tennisstat",
-        "#cafecomtenis", "#cafecomteniss",
-        f"#{player_full.split()[-1].lower().replace('-', '')}",
+        "#tennis", "#tenis", "#ATP", "#WTA",
+        "#cafecomtenis", "#cafecomteniss", "#tenisbrasileiro",
+        "#tennisstat", "#tennisdata", "#tennisfacts",
+        "#rolandgarros", "#rolandgarros2026",
+        _player_tag,
     ]
 
     publisher = _make_publisher()
@@ -795,8 +806,10 @@ async def run_night_recap():
     )
 
     hashtags = [
-        "#tennis", "#tenis", "#ATP", "#WTA", "#tennisrecap",
-        "#cafecomtenis", "#cafecomteniss",
+        "#tennis", "#tenis", "#ATP", "#WTA",
+        "#cafecomtenis", "#cafecomteniss", "#tenisbrasileiro",
+        "#tennisrecap", "#tennisnews", "#tennisdaily",
+        "#rolandgarros", "#rolandgarros2026",
         f"#{_date.today().strftime('%d%m')}",
     ]
 
@@ -1053,6 +1066,7 @@ async def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "help"
     modes = {
         "daily":          run_daily_pipeline,
+        "trends-only":    lambda: run_daily_pipeline(skip_evergreen=True),
         "on-this-day":    run_on_this_day,
         "stat-card":      run_stat_card,
         "stat-historico":  run_stat_historico,

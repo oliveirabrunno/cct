@@ -3,12 +3,20 @@ Gere uma legenda para Instagram sobre {post_type}.
 Dados do post:
 {data}
 
-REGRAS:
+REGRAS OBRIGATÓRIAS:
 - Máximo 150 palavras
-- Primeira frase: gancho forte (dado ou pergunta impactante)
-- Tom: direto, apaixonado, sem clichê
-- Português do Brasil
-- Inclua 3-5 hashtags relevantes ao final (linha separada)
-- Não repita a headline do slide 1 literalmente
+- Primeira frase: dado mais impactante SEM introdução (nunca "Olá", "Hoje", "Vamos falar")
+- Frases curtas — máximo 12 palavras por frase
+- Tom: bar entre amigos que entendem de tênis. Direto, apaixonado.
+- Português do Brasil natural
+- NUNCA usar: "incrível", "surpreendente", "top", "imperdível", "curte", "salva", "segue"
+- ÚLTIMA FRASE: pergunta aberta que gera debate — NUNCA CTA explícito
+  BOM: "E você apostaria no Fonseca contra Sinner agora?"
+  RUIM: "O que você acha? Comenta aqui!"
 
-Retorne apenas o texto da legenda, sem explicações.
+HASHTAGS (10-15 obrigatórias — linha separada após a legenda):
+Base fixa: #tennis #tenis #ATP #WTA #cafecomtenis #cafecomteniss #tenisbrasileiro
+Torneio atual: #rolandgarros #rolandgarros2026
+Adicionar 3-5 específicas do atleta/contexto do post
+
+Retorne apenas o texto da legenda + hashtags, sem explicações.

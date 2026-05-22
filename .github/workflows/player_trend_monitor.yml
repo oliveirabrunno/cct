@@ -1,12 +1,13 @@
-name: Ranking Semanal — Segunda 08h BRT
+name: Monitor de Tendências — a cada 30min
 
-# Gera carrossel de ranking ATP/WTA toda segunda-feira às 08:00 BRT (11:00 UTC).
-# 2 slides: Top 30 ATP + Top 30 WTA com badges de movimentação (↑↓ NEW).
-# Foto do destaque da semana + resumo gerado por Claude.
+# Checa a cada 30 minutos se algum jogador atingiu score de trend >= 4.
+# Se sim, gera e publica o carrossel de tendência imediatamente.
+# Não publica evergreen — o dedup previne publicações duplicadas.
+# Objetivo: capitalizar em menos de 30min sobre quebras de notícia.
 
 on:
   schedule:
-    - cron: "0 11 * * 1"   # 11:00 UTC = 08:00 BRT
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 concurrency:
@@ -14,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  ranking:
+  trend_monitor:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -64,42 +65,38 @@ jobs:
       - name: Install Playwright (chromium only)
         run: python -m playwright install chromium --with-deps
 
-      # Cache principal: dedup DB + fotos + histórico de rankings (para calcular movimentação)
       - name: Get current date
         id: get-date
         run: echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
 
-      - name: Cache dados persistentes
+      - name: Cache dados persistentes (dedup DB + fotos de jogadores)
         uses: actions/cache@v4
         with:
           path: |
             data/database.sqlite
             data/players
-            data/ranking_cache_atp.json
-            data/ranking_cache_wta.json
           key: data-cache-v5-${{ steps.get-date.outputs.date }}-${{ github.run_id }}
           restore-keys: |
             data-cache-v5-${{ steps.get-date.outputs.date }}-
             data-cache-v5-
 
-      - name: Atualizar dados Sackmann
-        run: python scripts/update_sackmann.py
-
-      - name: Gerar carrossel de ranking
+      - name: Verificar trends e publicar se score >= 4
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
           META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
           PAGE_ID: ${{ secrets.PAGE_ID }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
-        run: python orchestrator.py ranking
+        run: python orchestrator.py trends-only
 
       - name: Upload output
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ranking-${{ github.run_id }}
+          name: trend-monitor-${{ github.run_id }}
           path: output/queue/
-          retention-days: 7
+          retention-days: 3

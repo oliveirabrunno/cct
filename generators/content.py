@@ -49,9 +49,13 @@ class ContentGenerator:
         return self._call_claude(system, prompt)
 
     def generate_carousel_slides(self, post_type: str, data: dict) -> dict:
-        system = _load_prompt("base_voice") or (
-            "Você é o Café com Tênis (@cafecomteniss). "
-            "Crie conteúdo de alta retenção para Instagram, modelo @ri.cred."
+        system = (
+            (_load_prompt("viral_master_prompt") + "\n\n" + _load_prompt("base_voice"))
+            if _load_prompt("viral_master_prompt") and _load_prompt("base_voice")
+            else _load_prompt("viral_master_prompt")
+            or _load_prompt("base_voice")
+            or "Você é o Café com Tênis (@cafecomteniss). "
+               "Crie conteúdo de alta retenção para Instagram, modelo @ri.cred."
         )
         prompt_template = _load_prompt(post_type) or _load_prompt("carousel") or (
             "Crie um carrossel de slides sobre {player_name}.\n"
