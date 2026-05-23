@@ -256,7 +256,7 @@ async def generate_post(
 
     # Selecionar template: insight.html para scout/h2h com stats, post.html para o resto
     use_insight_template = (
-        post_type in ("scout", "insight", "h2h")
+        post_type in ("scout", "h2h")
         or "stats" in post_data
     ) and INSIGHT_TEMPLATE_HTML.exists()
 
