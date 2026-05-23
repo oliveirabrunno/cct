@@ -103,7 +103,26 @@ async def _generate_news_story(gen: StoryGenerator, content_gen: ContentGenerato
         context = data.get("context", summary[:80])
         player  = data.get("player", player)
 
-        return await gen.generate_curiosity_story(stat, context, player_name=player)
+        # Guard: não gerar story de notícia se não há conteúdo real
+        if not stat or len(stat.strip()) < 8:
+            log.info("news_story: stat vazio ou muito curto — abortando")
+            return None
+
+        # Guard: story de notícia só sai se um feed post sobre o mesmo jogador
+        # foi publicado nas últimas 2h — evita story solto sem contexto no feed
+        if player:
+            from utils.dedup import player_posted_recently
+            if not player_posted_recently(player, hours=2):
+                log.info(f"news_story: nenhum post recente sobre '{player}' no feed — pulando story")
+                return None
+
+        return await gen.generate_curiosity_story(
+            stat, context,
+            player_name=player,
+            surface="clay",
+            badge="AGORA",
+            kicker=top.get("source", ""),
+        )
     except Exception as e:
         log.error(f"news_story falhou: {e}")
         return None
@@ -115,15 +134,22 @@ async def _generate_tournament_story(gen: StoryGenerator, content_gen: ContentGe
         from scrapers.tournament_draw import CURRENT_TOURNAMENT, get_tournament_seeds
         t = CURRENT_TOURNAMENT
         seeds = get_tournament_seeds("atp")
-        seed1 = seeds[0]["name"] if seeds else "o #1 do mundo"
+        seed1_name = seeds[0]["name"] if seeds else "Jannik Sinner"
 
         stat    = f"{t['short'].upper()} começa {t['date'].split('–')[0].strip()}"
         context = (
             f"{t['category']} em {t['location']}. "
             f"Superfície: {t['surface']}. "
-            f"{seed1} é o grande favorito."
+            f"{seed1_name.split()[-1]} é o grande favorito."
         )
-        return await gen.generate_curiosity_story(stat, context)
+        # Passa o seed1 como player para ter foto de fundo (não renderiza branco)
+        return await gen.generate_curiosity_story(
+            stat, context,
+            player_name=seed1_name,
+            surface=t.get("surface", "clay"),
+            badge=t["short"].upper(),
+            kicker=t["location"],
+        )
     except Exception as e:
         log.error(f"tournament_story falhou: {e}")
         return None
@@ -242,16 +268,34 @@ async def _generate_draw_teaser_story(gen: StoryGenerator) -> str | None:
     """Story de teaser apontando para o carrossel de draw path."""
     try:
         from scrapers.tournament_draw import CURRENT_TOURNAMENT, get_tournament_seeds
+        from utils.dedup import is_duplicate
         t = CURRENT_TOURNAMENT
-        seeds_atp = get_tournament_seeds("atp")
-        seed1 = seeds_atp[0]["name"].split()[-1] if seeds_atp else "Sinner"
 
-        stat    = f"Quem chega na final de {t['short']}?"
-        context = (
-            f"Fizemos o caminho completo de todos os favoritos. "
-            f"Veja no carrossel. @cafecomteniss"
+        # Só faz teaser se o carrossel de chaveamento foi publicado nas últimas 48h
+        if not is_duplicate("draw_overview", f"draw_overview_{t['short'].lower()}_atp", hours=48):
+            log.info("draw_teaser: carrossel de draw não publicado ainda — pulando teaser")
+            return None
+
+        seeds_atp = get_tournament_seeds("atp")
+        seed1_name = seeds_atp[0]["name"] if seeds_atp else "Jannik Sinner"
+        bra_name   = next(
+            (s["name"] for s in seeds_atp if s["name"] in t.get("brazilians_atp", [])),
+            None
         )
-        return await gen.generate_curiosity_story(stat, context)
+        player_for_bg = bra_name or seed1_name
+
+        stat    = f"Quem chega à final de {t['short']}?"
+        context = (
+            f"Fizemos o caminho completo dos favoritos. "
+            f"Veja o carrossel no feed. @cafecomteniss"
+        )
+        return await gen.generate_curiosity_story(
+            stat, context,
+            player_name=player_for_bg,
+            surface=t.get("surface", "clay"),
+            badge="CHAVEAMENTO",
+            kicker=t["short"].upper(),
+        )
     except Exception as e:
         log.error(f"draw_teaser_story falhou: {e}")
         return None

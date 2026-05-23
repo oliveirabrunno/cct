@@ -188,12 +188,17 @@ class StoryGenerator:
     ) -> str | None:
         from generators.visual import generate_story
 
+        # Guard: não renderizar story com título vazio (causaria story em branco)
+        if not stat or not stat.strip():
+            log.warning("generate_curiosity_story: stat vazio — abortando para não gerar story em branco")
+            return None
+
         story_data = {
             "surface":  surface,
             "badge":    badge,
             "kicker":   kicker,
             "title":    stat,
-            "subtitle": context,
+            "subtitle": context or "",
         }
         path = await generate_story("curiosity", player_name, story_data)
         if path:
