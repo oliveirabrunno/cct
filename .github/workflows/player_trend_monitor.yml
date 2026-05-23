@@ -1,13 +1,13 @@
-name: Monitor de Tendências — a cada 30min
+name: Monitor de Tendências — a cada 2h
 
-# Checa a cada 30 minutos se algum jogador atingiu score de trend >= 4.
+# Checa a cada 2 horas se algum jogador atingiu score de trend >= 4.
 # Se sim, gera e publica o carrossel de tendência imediatamente.
 # Não publica evergreen — o dedup previne publicações duplicadas.
-# Objetivo: capitalizar em menos de 30min sobre quebras de notícia.
+# Objetivo: capitalizar em menos de 2h sobre quebras de notícia.
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "45 */2 * * *"
   workflow_dispatch:
 
 concurrency:
