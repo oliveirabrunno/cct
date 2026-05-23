@@ -117,44 +117,58 @@ async def run():
         m = matches[0]
         years_ago = today.year - int(m["year"])
         round_label = "final" if m["round"] == "F" else "semifinal"
+        ha_x_anos = f"HÁ {years_ago} ANOS"
         prompt = (
-            f"Hoje, {day_str}. Há {years_ago} anos (em {m['year']}), "
+            f"Hoje, {day_str}. Em {m['year']} (há {years_ago} anos), "
             f"{m['winner']} venceu {m['loser']} ({m['score']}) na {round_label} de {m['tournament']} ({m['tour']}).\n\n"
-            "Gere um card 'Hoje na história do tênis' viral para Instagram.\n"
-            "REGRAS:\n"
-            "- headline: o dado mais impactante, máx 8 palavras, sem introdução\n"
-            "- subtext: contexto histórico, máx 20 palavras\n"
-            "- player: nome completo do jogador principal (OBRIGATÓRIO — use o vencedor da partida)\n"
-            "- caption: legenda (máx 80 palavras), tom de bar, CTA invisível no final\n"
+            "Gere um card histórico VIRAL para Instagram. O leitor deve entender IMEDIATAMENTE que é um fato do passado.\n"
+            "REGRAS CRÍTICAS:\n"
+            f"- headline: OBRIGATÓRIO começar com '{ha_x_anos}:' seguido do fato. Máx 10 palavras total.\n"
+            f"  Exemplo correto: '{ha_x_anos}: Nadal venceu Roland Garros pela 9ª vez.'\n"
+            f"  Exemplo ERRADO: 'Nadal domina Paris' (não indica que é passado)\n"
+            "- subtext: contexto histórico que agrega valor, máx 20 palavras. Pode comparar com hoje.\n"
+            "- player: nome completo do jogador principal (OBRIGATÓRIO — use o vencedor)\n"
+            "- caption: legenda (máx 80 palavras), tom de bar. Última frase: pergunta que gera debate.\n"
+            "  Sempre deixar claro que é um fato histórico, nunca de hoje.\n"
             "Responda SOMENTE JSON: {\"headline\":\"\",\"subtext\":\"\",\"player\":\"\",\"caption\":\"\"}"
         )
         log.info(f"Fato encontrado: {m['year']} {m['winner']} def {m['loser']} em {m['tournament']}")
-        default_player = m["winner"]  # fallback caso Claude não retorne player
+        default_player = m["winner"]
+        badge_label = f"Há {years_ago} Anos"
     else:
         prompt = (
             f"Hoje é {day_str}. Gere um fato histórico marcante do tênis para essa data.\n"
             "Pode ser um recorde quebrado, conquista histórica, ou momento icônico real.\n"
-            "REGRAS:\n"
-            "- headline: máx 8 palavras, impactante, sem introdução\n"
-            "- subtext: contexto, máx 20 palavras\n"
-            "- player: jogador principal (OBRIGATÓRIO — escolha o atleta mais associado ao fato)\n"
-            "- caption: legenda (máx 80 palavras), tom de bar, CTA invisível\n"
-            "Responda SOMENTE JSON: {\"headline\":\"\",\"subtext\":\"\",\"player\":\"\",\"caption\":\"\"}"
+            "REGRAS CRÍTICAS:\n"
+            "- headline: OBRIGATÓRIO começar com 'HÁ X ANOS:' (substituir X pelo número real de anos). Máx 10 palavras.\n"
+            "  Exemplo: 'HÁ 15 ANOS: Federer conquistou seu 15º Grand Slam.'\n"
+            "- subtext: contexto histórico, máx 20 palavras. Nunca soar como notícia atual.\n"
+            "- player: jogador principal (OBRIGATÓRIO)\n"
+            "- caption: legenda (máx 80 palavras), tom de bar, última frase = pergunta debate\n"
+            "- years_ago: número inteiro de anos atrás (campo extra para o badge)\n"
+            "Responda SOMENTE JSON: {\"headline\":\"\",\"subtext\":\"\",\"player\":\"\",\"caption\":\"\",\"years_ago\":0}"
         )
         log.info("Sem dados Sackmann — usando Claude para gerar fato histórico")
-        default_player = "Roger Federer"  # fallback genérico
+        default_player = "Roger Federer"
+        badge_label = "Hoje na História"
 
     raw = content_gen._call_claude(system, prompt, max_tokens=400)
     data = content_gen._parse_json_response(raw)
 
-    headline = data.get("headline", f"Hoje na história. {today.strftime('%d/%m')}.")
+    headline = data.get("headline", f"Há anos: história do tênis. {today.strftime('%d/%m')}.")
     subtext  = data.get("subtext", "")
     player   = data.get("player", "").strip() or default_player
     caption  = data.get("caption", headline)
 
+    # Para o fallback sem Sackmann, extrair years_ago do response do Claude
+    if not matches and data.get("years_ago"):
+        badge_label = f"Há {data['years_ago']} Anos"
+
     hashtags = [
-        "#tennis", "#tenis", "#onthisday", "#historiadotenis", "#hoje",
-        "#ATP", "#WTA", "#cafecomtenis", "#cafecomteniss",
+        "#tennis", "#tenis", "#ATP", "#WTA",
+        "#cafecomtenis", "#cafecomteniss", "#tenisbrasileiro",
+        "#onthisday", "#historiadotenis", "#tennishistory",
+        "#rolandgarros", "#rolandgarros2026",
     ]
     if player:
         last_name = player.split()[-1].lower().replace("-", "")
@@ -162,7 +176,7 @@ async def run():
 
     card_data = {
         "player": player,
-        "tournament": f"Hoje na História · {today.strftime('%d/%m')}",
+        "tournament": f"{badge_label} · {today.strftime('%d/%m')}",
     }
     content_data = {
         "headline": headline,

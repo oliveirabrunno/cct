@@ -1,22 +1,36 @@
-name: On This Day — Histórico (Seg/Qua/Sex)
+name: Match Preview — Pré-jogo 07h BRT
 
-# Publica 1 card histórico + 1 story às 06:00 BRT (09:00 UTC).
-# Roda apenas 3x/semana (segunda, quarta, sexta) para equilibrar o mix de conteúdo.
-# Nos outros dias o slot de 06:00 fica livre para preview de partida ou trending.
+# Publica carrossel de análise pré-jogo com H2H real + análise técnica.
+# Roda às 07:00 BRT (10:00 UTC) todos os dias de torneio.
+# Uso manual: informar os dois jogadores como input.
+# Objetivo: ser o primeiro canal a postar análise antes da partida.
 
 on:
   schedule:
-    - cron: "0 9 * * 1,3,5"
+    - cron: "0 10 * * *"   # 10:00 UTC = 07:00 BRT
   workflow_dispatch:
+    inputs:
+      player_a:
+        description: "Jogador A (ex: Fonseca, Sinner)"
+        required: false
+        default: ""
+      player_b:
+        description: "Jogador B (ex: Djokovic, Zverev)"
+        required: false
+        default: ""
+      round_info:
+        description: "Fase (ex: '1ª Rodada', 'Quartas')"
+        required: false
+        default: "Roland Garros 2026"
 
 concurrency:
   group: publish-queue
   cancel-in-progress: false
 
 jobs:
-  on_this_day:
+  match_preview:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v4
@@ -79,11 +93,7 @@ jobs:
             data-cache-v5-${{ steps.get-date.outputs.date }}-
             data-cache-v5-
 
-      - name: Atualizar dados Sackmann
-        run: python scripts/update_sackmann.py
-        continue-on-error: true
-
-      - name: Gerar On This Day
+      - name: Gerar match preview
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
@@ -91,12 +101,17 @@ jobs:
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
           META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
-        run: python orchestrator.py on-this-day
+        run: |
+          if [ -n "${{ github.event.inputs.player_a }}" ] && [ -n "${{ github.event.inputs.player_b }}" ]; then
+            python orchestrator.py match-preview "${{ github.event.inputs.player_a }}" "${{ github.event.inputs.player_b }}" "${{ github.event.inputs.round_info || 'Roland Garros 2026' }}"
+          else
+            python orchestrator.py match-preview
+          fi
 
       - name: Upload output
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: on-this-day-${{ github.run_id }}
+          name: match-preview-${{ github.run_id }}
           path: output/queue/
           retention-days: 3

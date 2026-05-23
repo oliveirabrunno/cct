@@ -905,6 +905,145 @@ async def run_test_match_result():
         print("\nERRO ao gerar card")
 
 
+async def run_match_preview():
+    """
+    Carrossel pré-jogo com H2H real + análise técnica.
+    Uso:
+      python orchestrator.py match-preview "Fonseca" "Djokovic"    # partida específica
+      python orchestrator.py match-preview                          # auto: 2 jogadores em trend
+    """
+    from scrapers.atp_iq import get_h2h_card
+    from scrapers.tournament_draw import CURRENT_TOURNAMENT
+    from generators.visual import generate_carousel
+    from generators.content import ContentGenerator, _load_prompt
+    from utils.dedup import is_duplicate, register_post
+
+    args = sys.argv[2:]  # ex: ["Fonseca", "Djokovic"]
+
+    if len(args) >= 2:
+        player_a = args[0]
+        player_b = args[1]
+        round_info = args[2] if len(args) > 2 else "Roland Garros 2026"
+    else:
+        # Auto: pegar 2 jogadores mais trending para o confronto do dia
+        detector = TrendDetector()
+        trending = await detector.check_all_players()
+        if len(trending) >= 2:
+            player_a = trending[0]["player"]
+            player_b = trending[1]["player"]
+        elif len(trending) == 1:
+            player_a = trending[0]["player"]
+            entries = CURRENT_TOURNAMENT.get("entries_atp", [])
+            player_b = next((p for p in entries if p != player_a), "Novak Djokovic")
+        else:
+            log.info("match-preview: sem trending suficiente — abortando")
+            return
+        round_info = f"{CURRENT_TOURNAMENT['short']} 2026"
+
+    tournament = CURRENT_TOURNAMENT["name"]
+    surface    = CURRENT_TOURNAMENT["surface"]
+
+    dedup_key = f"match_preview_{player_a.split()[-1].lower()}_{player_b.split()[-1].lower()}"
+    if is_duplicate("match_preview", dedup_key, hours=48):
+        log.info(f"match-preview: {player_a} vs {player_b} já publicado — pulando")
+        return
+
+    log.info(f"=== Match Preview: {player_a} vs {player_b} em {tournament} ===")
+
+    h2h_data = {}
+    try:
+        h2h_data = get_h2h_card(player_a, player_b, tournament)
+    except Exception as e:
+        log.warning(f"H2H data indisponível: {e}")
+
+    h2h_raw  = h2h_data.get("raw", {})
+    h2h_total = h2h_raw.get("total", 0)
+    wins_a   = h2h_raw.get("wins_a", 0)
+    wins_b   = h2h_raw.get("wins_b", 0)
+    leader   = player_a if wins_a > wins_b else (player_b if wins_b > wins_a else "Empate")
+    surface_h2h = h2h_raw.get("surface_insight", f"Primeiro confronto em {surface}")
+    tourn_ctx   = (h2h_data.get("tournament_context") or {}).get("context_text", "Primeiro confronto neste torneio")
+
+    content_gen = ContentGenerator()
+    system = (_load_prompt("viral_master_prompt") + "\n\n" + _load_prompt("base_voice")).strip()
+
+    template_data = {
+        "player_a":          player_a,
+        "player_b":          player_b,
+        "tournament":        tournament,
+        "surface":           surface,
+        "round_info":        round_info,
+        "h2h_total":         h2h_total,
+        "player_a_wins":     wins_a,
+        "player_b_wins":     wins_b,
+        "h2h_leader":        leader,
+        "h2h_surface":       surface_h2h,
+        "tournament_context": tourn_ctx,
+        "form_a":            h2h_raw.get("form_a", "Em alta na temporada"),
+        "form_b":            h2h_raw.get("form_b", "Em alta na temporada"),
+        "key_stat":          h2h_data.get("subtext", "Quebras de serviço serão decisivas"),
+    }
+
+    prompt = _load_prompt("match_preview")
+    for k, v in template_data.items():
+        prompt = prompt.replace(f"{{{k}}}", str(v))
+
+    raw = content_gen._call_claude(system, prompt, max_tokens=2000)
+    slides_content = content_gen._parse_json_response(raw)
+
+    if not slides_content or not slides_content.get("slides"):
+        log.error("match-preview: falha ao gerar slides")
+        return
+
+    # Normalizar slides para o template visual
+    for slide in slides_content["slides"]:
+        if not slide.get("kind"):
+            slide["kind"] = "cover" if slide.get("visual_note") in ("foto_action", "foto_clean") else "text"
+        if not slide.get("title") and slide.get("headline"):
+            slide["title"] = slide["headline"]
+        if not slide.get("subtitle") and slide.get("subtext"):
+            slide["subtitle"] = slide["subtext"]
+
+    slides_content.setdefault("badge", tournament)
+
+    visual_data = {
+        "player":      player_a,
+        "player_name": player_a,
+        "tournament":  CURRENT_TOURNAMENT["short"],
+        "surface":     surface,
+    }
+
+    image_paths = await generate_carousel("match_preview", visual_data, slides_content)
+    if not image_paths:
+        log.error("match-preview: falha na geração visual")
+        return
+
+    publisher = _make_publisher()
+    caption   = slides_content.get("caption", f"{player_a} vs {player_b} — {round_info}")
+    hashtags  = slides_content.get("hashtags", [
+        "#tennis", "#tenis", "#ATP", "#cafecomtenis", "#cafecomteniss",
+        "#rolandgarros", "#rolandgarros2026", "#matchpreview",
+    ])
+
+    ok = await publisher.publish_carousel(image_paths, caption, hashtags)
+    if ok:
+        register_post("match_preview", dedup_key, description=f"{player_a} vs {player_b}")
+        log.info(f"Match preview publicado: {player_a} vs {player_b}")
+
+        # Story poll automático
+        story_gen = StoryGenerator()
+        poll = await story_gen.generate_h2h_poll_story(
+            player_a, player_b,
+            {"tournament": tournament, "round": round_info},
+        )
+        if poll and poll.get("image_path"):
+            ok_story = await publisher.publish_story(poll["image_path"])
+            if ok_story:
+                log.info("Story poll publicado")
+    else:
+        log.error("match-preview: falha ao publicar no Instagram")
+
+
 async def run_calendar():
     import subprocess
     subprocess.run([sys.executable, "scripts/editorial_calendar.py"])
@@ -1076,6 +1215,7 @@ async def main():
         "live":           run_live_monitor,
         "ranking":        run_ranking,
         "draw-path":      run_draw_path,
+        "match-preview":  run_match_preview,
         "stories":        run_stories,
         "h2h-poll":       run_h2h_poll,
         "rg-launch":      run_rg_launch,

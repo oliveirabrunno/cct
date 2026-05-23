@@ -1,0 +1,54 @@
+Você vai criar um carrossel pré-jogo de 6 slides sobre {player_a} vs {player_b} em {tournament}.
+
+DADOS DO CONFRONTO:
+Torneio: {tournament} ({surface})
+Fase: {round_info}
+H2H geral: {h2h_total} confrontos — {player_a_wins} x {player_b_wins} para {h2h_leader}
+H2H neste piso: {h2h_surface}
+Contexto no mesmo torneio: {tournament_context}
+Forma atual de {player_a}: {form_a}
+Forma atual de {player_b}: {form_b}
+Fator decisivo: {key_stat}
+
+FUNIL DE RETENÇÃO OBRIGATÓRIO:
+
+Slide 1 — HOOK: Quem joga, quando e o QUE ESTÁ EM JOGO. Sem revelar o favorito.
+  Formato: "[NOME]. [NOME]. [TORNEIO]. [RODADA]."
+  Exemplo: "Fonseca. Djokovic. Roland Garros. 1ª Rodada."
+  Subtext: a tensão. O que torna essa partida histórica/especial.
+
+Slide 2 — H2H HISTÓRICO: Número impactante do confronto direto total.
+  Se nunca se enfrentaram: "PRIMEIRO CONFRONTO DA HISTÓRIA."
+  Se já jogaram: quem lidera, em que circunstância.
+
+Slide 3 — NO SAIBRO / NESTE TORNEIO: Performance específica de cada um.
+  Recordes no piso, títulos anteriores, últimos encontros no mesmo torneio.
+
+Slide 4 — FORMA ATUAL: Quem chega mais quente? Números da temporada/últimas semanas.
+
+Slide 5 — FATOR DECISIVO: A stat que vai definir o jogo.
+  Pode ser saque, devolução, break points, 1º set, etc.
+  Apresentar como "A CHAVE DA PARTIDA:"
+
+Slide 6 — CTA INVISÍVEL: Pergunta que divide torcedores. NÃO diga "comente aqui".
+  Exemplo: "Fonseca tem moral pra ganhar de Djokovic em Paris?"
+
+REGRAS:
+- Frases curtas, máx 10 palavras
+- Números específicos sempre
+- Tom: bar entre amigos que entendem de tênis
+- Se {player_a} for brasileiro (Fonseca, Bia Haddad), enfatizar orgulho nacional COM DADOS
+
+OUTPUT JSON (responda APENAS o JSON, sem markdown):
+{
+  "slides": [
+    {"slide": 1, "headline": "", "subtext": "", "visual_note": "foto_action", "player": "{player_a}"},
+    {"slide": 2, "headline": "", "subtext": "", "visual_note": "sem_foto", "player": ""},
+    {"slide": 3, "headline": "", "subtext": "", "visual_note": "foto_clean", "player": "{player_b}"},
+    {"slide": 4, "headline": "", "subtext": "", "visual_note": "foto_clean", "player": "{player_a}"},
+    {"slide": 5, "headline": "", "subtext": "", "visual_note": "sem_foto", "player": ""},
+    {"slide": 6, "headline": "", "subtext": "pergunta debate invisível", "visual_note": "logo", "player": ""}
+  ],
+  "caption": "legenda do post — máx 120 palavras, última frase = pergunta debate",
+  "hashtags": ["#tennis", "#tenis", "#ATP", "#WTA", "#cafecomtenis", "#cafecomteniss", "#tenisbrasileiro", "#rolandgarros", "#rolandgarros2026", "#PLAYER_A_TAG", "#PLAYER_B_TAG", "#grandslam", "#matchpreview"]
+}
