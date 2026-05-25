@@ -127,12 +127,12 @@ async def run():
             f"  Exemplo correto: '{ha_x_anos}: Nadal venceu Roland Garros pela 9ª vez.'\n"
             f"  Exemplo ERRADO: 'Nadal domina Paris' (não indica que é passado)\n"
             "- subtext: contexto histórico que agrega valor, máx 20 palavras. Pode comparar com hoje.\n"
-            "- player: nome completo do jogador principal (OBRIGATÓRIO — use o vencedor)\n"
             "- caption: legenda (máx 80 palavras), tom de bar. Última frase: pergunta que gera debate.\n"
             "  Sempre deixar claro que é um fato histórico, nunca de hoje.\n"
-            "Responda SOMENTE JSON: {\"headline\":\"\",\"subtext\":\"\",\"player\":\"\",\"caption\":\"\"}"
+            "Responda SOMENTE JSON: {\"headline\":\"\",\"subtext\":\"\",\"caption\":\"\"}"
         )
         log.info(f"Fato encontrado: {m['year']} {m['winner']} def {m['loser']} em {m['tournament']}")
+        # SEMPRE usar o vencedor do CSV — nunca confiar no campo 'player' do Claude
         default_player = m["winner"]
         badge_label = f"Há {years_ago} Anos"
     else:
@@ -155,10 +155,26 @@ async def run():
     raw = content_gen._call_claude(system, prompt, max_tokens=400)
     data = content_gen._parse_json_response(raw)
 
-    headline = data.get("headline", f"Há anos: história do tênis. {today.strftime('%d/%m')}.")
-    subtext  = data.get("subtext", "")
-    player   = data.get("player", "").strip() or default_player
-    caption  = data.get("caption", headline)
+    headline = (data.get("headline") or "").strip() or f"Há anos: história do tênis. {today.strftime('%d/%m')}."
+    subtext  = (data.get("subtext") or "").strip()
+    caption  = (data.get("caption") or "").strip() or headline
+
+    # Para o caminho Sackmann: SEMPRE usar o vencedor do CSV (nunca campo 'player' do Claude)
+    # Para o fallback (sem Sackmann): usar campo 'player' do Claude mas validar contra headline
+    if matches:
+        player = default_player  # = m["winner"] — imutável
+    else:
+        player = data.get("player", "").strip()
+        if player:
+            # Validar: sobrenome do jogador deve aparecer no headline gerado pelo Claude
+            last_name = player.split()[-1].lower()
+            if len(last_name) >= 3 and last_name not in headline.lower():
+                log.warning(
+                    f"on_this_day: jogador '{player}' ausente no headline '{headline[:60]}' "
+                    f"— usando fallback '{default_player}'"
+                )
+                player = default_player
+        player = player or default_player
 
     # Para o fallback sem Sackmann, extrair years_ago do response do Claude
     if not matches and data.get("years_ago"):
@@ -174,9 +190,13 @@ async def run():
         last_name = player.split()[-1].lower().replace("-", "")
         hashtags.append(f"#{last_name}")
 
+    # Usar torneio real (do Sackmann ou vazio) para que a busca de imagem
+    # receba um nome de torneio válido — nunca passar o badge_label (data label)
+    # como tournament_name pois gera queries absurdas ("Isner tennis Há 16 Anos 2026")
+    real_tournament = m["tournament"] if matches else ""
     card_data = {
         "player": player,
-        "tournament": f"{badge_label} · {today.strftime('%d/%m')}",
+        "tournament": real_tournament,
     }
     content_data = {
         "headline": headline,

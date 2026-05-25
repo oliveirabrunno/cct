@@ -251,6 +251,13 @@ async def generate_post(
         )
         return None
 
+    # Verificação de conteúdo: abortar se título e subtítulo ambos vazios
+    title_val    = post_data.get("title", "").strip()
+    subtitle_val = post_data.get("subtitle", "").strip()
+    if not title_val and not subtitle_val:
+        log.error("Conteúdo de texto vazio (title e subtitle em branco) — abortando card para evitar post em branco")
+        return None
+
     if not (img_data and img_data.get("path") and post_data.get("image", "").startswith("data:")):
         log.warning(f"Sem foto do jogador '{player_query}' — usando imagem alternativa presente no card")
 

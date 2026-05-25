@@ -324,7 +324,7 @@ async def run_afternoon_insight():
 
     raw     = content_gen._call_claude(system, prompt, max_tokens=300)
     parsed  = content_gen._parse_json_response(raw)
-    caption = parsed.get("caption", stat_data["subtext"]) if parsed else stat_data["subtext"]
+    caption = ((parsed or {}).get("caption") or "").strip() or stat_data["subtext"]
 
     # ── Gerar visual ─────────────────────────────────────────────────────────
     post_data = {
@@ -653,10 +653,10 @@ async def run_stat_card():
     raw = content_gen._call_claude(system, prompt, max_tokens=350)
     data = content_gen._parse_json_response(raw)
 
-    headline = data.get("headline", f"{player.split()[-1].upper()}.")
-    subtext = data.get("subtext", "")
-    caption = data.get("caption", headline)
-    player_full = data.get("player_full", player)
+    headline = (data.get("headline") or "").strip() or f"{player.split()[-1].upper()}."
+    subtext = (data.get("subtext") or "").strip()
+    caption = (data.get("caption") or "").strip() or headline
+    player_full = (data.get("player_full") or "").strip() or player
 
     _player_tag = f"#{player_full.split()[-1].lower().replace('-', '').replace(' ', '')}"
     hashtags = [
@@ -789,10 +789,14 @@ async def run_night_recap():
     # Gerar imagens de slide com PIL
     slide_images = []
     for i, slide in enumerate(slides):
+        slide_headline = (slide.get("headline") or "").strip()
+        if not slide_headline:
+            log.warning(f"Night recap: slide {i+1} com headline vazio — pulando")
+            continue
         path = await generate_card_with_player(
             "stat_card",
             {"player": player, "tournament": "Recap do Dia"},
-            {"headline": slide.get("headline", ""), "subtext": slide.get("subtext", ""), "visual_note": "foto_action"},
+            {"headline": slide_headline, "subtext": (slide.get("subtext") or "").strip(), "visual_note": "foto_action"},
         )
         if path:
             slide_images.append(str(path))
