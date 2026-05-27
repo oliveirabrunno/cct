@@ -26,6 +26,10 @@ import os
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+# Permite rodar como `python scripts/burst_orchestrator.py` da raiz do projeto
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dotenv import load_dotenv
 load_dotenv()

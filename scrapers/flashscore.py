@@ -36,10 +36,19 @@ MONITORED_PLAYERS_LOWER = {
 
 
 async def fetch_live_scores(urls: list[str] | None = None) -> list[dict]:
-    # Por padrão, varrer a página geral + URLs específicas de Grand Slams ativos.
+    # Por padrão, varrer a página geral + URLs específicas de Grand Slams ativos
+    # + URL com filtro de amanhã (para capturar partidas agendadas).
     # Cobertura melhor pra Roland Garros, US Open, Wimbledon, Australian Open.
     if urls is None:
-        urls = [FLASHSCORE_TENNIS_URL, FLASHSCORE_RG_URL, FLASHSCORE_RG_WTA_URL]
+        tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y%m%d")
+        day_after = (datetime.now(timezone.utc) + timedelta(days=2)).strftime("%Y%m%d")
+        urls = [
+            FLASHSCORE_TENNIS_URL,
+            FLASHSCORE_RG_URL,
+            FLASHSCORE_RG_WTA_URL,
+            f"{FLASHSCORE_TENNIS_URL}?d={tomorrow}",
+            f"{FLASHSCORE_TENNIS_URL}?d={day_after}",
+        ]
     try:
         from playwright.async_api import async_playwright
 

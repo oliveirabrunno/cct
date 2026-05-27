@@ -20,6 +20,9 @@ log = get_logger(__name__)
 
 CALENDAR_FILE = Path("data/upcoming_matches.json")
 CALENDAR_FILE.parent.mkdir(parents=True, exist_ok=True)
+# Override manual — usuário pode editar este arquivo para adicionar partidas
+# que o scraper não pegou (Grand Slam ainda não publicou cronograma, etc.)
+MANUAL_OVERRIDE_FILE = Path("data/manual_matches.json")
 
 # Jogadores brasileiros têm prioridade máxima
 BRAZILIAN_PLAYERS = {"fonseca", "haddad", "meligeni", "seyboth", "wild", "monteiro"}
@@ -132,19 +135,22 @@ async def fetch_upcoming_matches(hours_ahead: int = 72) -> list[dict]:
     cutoff = now + timedelta(hours=hours_ahead)
     upcoming: list[dict] = []
 
+    skipped = {"finished_or_live": 0, "no_time": 0, "out_of_window": 0, "low_importance": 0}
+
     for m in raw_matches:
         status = m.get("status", "").lower()
-        # Partidas agendadas têm status vazio ou "scheduled"/"00:00 ip" etc.
-        # Finalizadas têm "finished", "fim", "final"
         is_finished = any(s in status for s in ["finished", "fim", "final", "retired", "walkover"])
         is_live = any(s in status for s in ["set", "ip", "live"])
         if is_finished or is_live:
+            skipped["finished_or_live"] += 1
             continue
 
         match_time = _parse_match_time(m.get("start_ts"), m.get("date_text", ""))
         if not match_time:
+            skipped["no_time"] += 1
             continue
         if match_time < now or match_time > cutoff:
+            skipped["out_of_window"] += 1
             continue
 
         player_a = m.get("player_a", "")
@@ -152,7 +158,8 @@ async def fetch_upcoming_matches(hours_ahead: int = 72) -> list[dict]:
         tournament = m.get("tournament", "")
         importance = compute_importance(player_a, player_b, tournament)
 
-        if importance < 5:  # filtrar jogos pouco relevantes
+        if importance < 5:
+            skipped["low_importance"] += 1
             continue
 
         plan = burst_plan(importance)
@@ -167,8 +174,70 @@ async def fetch_upcoming_matches(hours_ahead: int = 72) -> list[dict]:
             "match_key": f"{_name_lower(player_a)}_vs_{_name_lower(player_b)}_{match_time.date().isoformat()}",
         })
 
+    log.info(f"Filtros aplicados: {skipped} | restantes: {len(upcoming)}")
+
+    # Mesclar com override manual
+    manual = _load_manual_overrides(now, cutoff)
+    if manual:
+        log.info(f"Carregadas {len(manual)} partidas do override manual")
+        # Override manual tem prioridade — substitui se houver match_key duplicado
+        existing_keys = {u["match_key"] for u in upcoming}
+        for m in manual:
+            if m["match_key"] not in existing_keys:
+                upcoming.append(m)
+
     upcoming.sort(key=lambda x: (-x["importance"], x["match_time_utc"]))
     return upcoming
+
+
+def _load_manual_overrides(now: datetime, cutoff: datetime) -> list[dict]:
+    """
+    Lê data/manual_matches.json (formato simples: lista de matches com player_a,
+    player_b, tournament, match_time_brt no formato 'YYYY-MM-DD HH:MM').
+    Calcula importance e burst_plan automaticamente.
+    """
+    if not MANUAL_OVERRIDE_FILE.exists():
+        return []
+    try:
+        data = json.loads(MANUAL_OVERRIDE_FILE.read_text())
+        entries = data.get("matches", [])
+    except Exception as e:
+        log.warning(f"Falha ao ler {MANUAL_OVERRIDE_FILE}: {e}")
+        return []
+
+    results: list[dict] = []
+    for entry in entries:
+        try:
+            time_str = entry.get("match_time_brt", "")
+            # Formato esperado: "2026-05-28 13:00" (BRT)
+            naive = datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+            # BRT = UTC-3 → adicionar 3h para obter UTC
+            match_time = naive.replace(tzinfo=timezone(timedelta(hours=-3))).astimezone(timezone.utc)
+        except Exception as e:
+            log.warning(f"Manual override ignorado (data inválida {time_str}): {e}")
+            continue
+
+        if match_time < now or match_time > cutoff:
+            log.info(f"Manual override fora da janela: {entry.get('player_a')} vs {entry.get('player_b')}")
+            continue
+
+        player_a = entry.get("player_a", "")
+        player_b = entry.get("player_b", "")
+        tournament = entry.get("tournament", "")
+        importance = entry.get("importance") or compute_importance(player_a, player_b, tournament)
+
+        results.append({
+            "player_a": player_a,
+            "player_b": player_b,
+            "tournament": tournament,
+            "match_time_utc": match_time.isoformat(),
+            "match_time_brt": (match_time - timedelta(hours=3)).isoformat(),
+            "importance": importance,
+            "burst_plan": burst_plan(importance),
+            "match_key": f"{_name_lower(player_a)}_vs_{_name_lower(player_b)}_{match_time.date().isoformat()}",
+            "source": "manual_override",
+        })
+    return results
 
 
 def save_calendar(matches: list[dict]) -> None:

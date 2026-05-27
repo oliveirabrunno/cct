@@ -1,0 +1,14 @@
+{
+  "_doc": "Override manual de partidas. Edite o array 'matches' quando o scraper nao pegar um jogo importante. Importance 1-10 (10 = burst maximo). Tempo BRT 'YYYY-MM-DD HH:MM'.",
+  "matches": [
+    {
+      "player_a": "Joao Fonseca",
+      "player_b": "Novak Djokovic",
+      "tournament": "Roland Garros 2026",
+      "round": "3a rodada",
+      "match_time_brt": "2026-05-29 14:00",
+      "importance": 10,
+      "_note": "Ajuste match_time_brt quando o horario oficial for divulgado (geralmente noite anterior pelo RG)"
+    }
+  ]
+}
