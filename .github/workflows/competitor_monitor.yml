@@ -1,0 +1,98 @@
+name: Monitor de Concorrentes e Trends
+
+# Checa a cada 4h o que concorrentes e tendências estão cobrindo.
+# Se detectar oportunidade urgente, dispara geração de carrossel via orchestrator.
+# Setup leve: apenas Python (sem Node, sem Playwright).
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"   # 6x/dia: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: competitor-monitor
+  cancel-in-progress: true   # cancelar run anterior se nova já foi disparada
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    outputs:
+      has_urgent: ${{ steps.scan.outputs.has_urgent }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: pip-${{ runner.os }}-
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Get current date
+        id: get-date
+        run: echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: Cache dados persistentes (dedup DB)
+        uses: actions/cache@v4
+        with:
+          path: data/database.sqlite
+          key: data-cache-v5-${{ steps.get-date.outputs.date }}-dedup
+          restore-keys: |
+            data-cache-v5-${{ steps.get-date.outputs.date }}-
+            data-cache-v5-
+
+      - name: Escanear trends e concorrentes
+        id: scan
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
+        # `set +e` + captura imediata: exit 0 do script = há urgentes; exit 1 = sem urgentes
+        run: |
+          set +e
+          python scripts/competitor_insights.py
+          code=$?
+          if [ $code -eq 0 ]; then
+            echo "has_urgent=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_urgent=false" >> $GITHUB_OUTPUT
+          fi
+          exit 0
+
+      - name: Upload oportunidades
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: competitor-opportunities-${{ github.run_id }}
+          path: data/competitor_opportunities.json
+          retention-days: 1
+
+  trigger_content:
+    needs: scan
+    if: needs.scan.outputs.has_urgent == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Disparar geração de carrossel via orchestrator
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'orchestrator.yml',
+              ref: 'main',
+              inputs: { mode: 'trends' }
+            })
+            console.log('Orchestrator disparado com mode=trends')

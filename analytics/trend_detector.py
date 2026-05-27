@@ -5,6 +5,9 @@ from utils.logger import get_logger
 log = get_logger(__name__)
 
 TREND_THRESHOLD = 4
+# Brasileiros disparam com 2 menções — imprensa pt-BR é mais lenta que global
+BRAZILIAN_THRESHOLD = 2
+BRAZILIAN_PLAYERS = {"João Fonseca", "Beatriz Haddad"}
 
 MONITORED_PLAYERS = {
     "João Fonseca":      ["joao fonseca", "joão fonseca", "fonseca tennis"],
@@ -49,7 +52,8 @@ class TrendDetector:
                 score += 3
                 signals["reddit_post"] = reddit_hit
 
-            if score >= TREND_THRESHOLD:
+            threshold = BRAZILIAN_THRESHOLD if player_name in BRAZILIAN_PLAYERS else TREND_THRESHOLD
+            if score >= threshold:
                 trending.append({
                     "player": player_name,
                     "score": score,
@@ -59,7 +63,7 @@ class TrendDetector:
                         if any(t in a["title_lower"] for t in search_terms)
                     ][:3],
                 })
-                log.info(f"TREND: {player_name} (score: {score})")
+                log.info(f"TREND: {player_name} (score: {score}, threshold: {threshold})")
 
         return sorted(trending, key=lambda x: x["score"], reverse=True)
 

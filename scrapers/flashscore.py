@@ -20,10 +20,13 @@ from utils.logger import get_logger
 log = get_logger(__name__)
 
 # Partidas mais velhas que este limite são ignoradas pelo monitor ao vivo.
-# 6h é suficiente para breaking news — resultados de ontem não são notícia.
-MAX_MATCH_AGE_HOURS = 6
+# 12h dá folga para Grand Slams onde jogos terminam tarde e o cron pode atrasar.
+MAX_MATCH_AGE_HOURS = 12
 
 FLASHSCORE_TENNIS_URL = "https://www.flashscore.com/tennis/"
+# Durante Grand Slams, monitorar diretamente a página do torneio para captura mais confiável
+FLASHSCORE_RG_URL = "https://www.flashscore.com/tennis/atp-singles/french-open/"
+FLASHSCORE_RG_WTA_URL = "https://www.flashscore.com/tennis/wta-singles/french-open/"
 
 MONITORED_PLAYERS_LOWER = {
     "sinner", "alcaraz", "djokovic", "zverev", "medvedev",
@@ -32,67 +35,84 @@ MONITORED_PLAYERS_LOWER = {
 }
 
 
-async def fetch_live_scores() -> list[dict]:
+async def fetch_live_scores(urls: list[str] | None = None) -> list[dict]:
+    # Por padrão, varrer a página geral + URLs específicas de Grand Slams ativos.
+    # Cobertura melhor pra Roland Garros, US Open, Wimbledon, Australian Open.
+    if urls is None:
+        urls = [FLASHSCORE_TENNIS_URL, FLASHSCORE_RG_URL, FLASHSCORE_RG_WTA_URL]
     try:
         from playwright.async_api import async_playwright
 
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(headless=True)
-            page = await browser.new_page(
-                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                           "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            )
-            await page.goto(FLASHSCORE_TENNIS_URL, timeout=30000, wait_until="domcontentloaded")
-            await page.wait_for_timeout(3000)
+            all_matches: list[dict] = []
+            for url in urls:
+                try:
+                    page = await browser.new_page(
+                        user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                                   "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                    )
+                    await page.goto(url, timeout=30000, wait_until="domcontentloaded")
+                    await page.wait_for_timeout(3000)
 
-            matches = await page.evaluate("""() => {
-                const rows = document.querySelectorAll('[class*="event__match"]');
-                const results = [];
-                rows.forEach(row => {
-                    const home = row.querySelector('[class*="event__participant--home"]');
-                    const away = row.querySelector('[class*="event__participant--away"]');
-                    const scoreHome = row.querySelector('[class*="event__score--home"]');
-                    const scoreAway = row.querySelector('[class*="event__score--away"]');
-                    const status = row.querySelector('[class*="event__stage"]');
-                    const tournament = document.querySelector('[class*="event__title"]');
+                    matches = await page.evaluate("""() => {
+                        const rows = document.querySelectorAll('[class*="event__match"]');
+                        const results = [];
+                        rows.forEach(row => {
+                            const home = row.querySelector('[class*="event__participant--home"]');
+                            const away = row.querySelector('[class*="event__participant--away"]');
+                            const scoreHome = row.querySelector('[class*="event__score--home"]');
+                            const scoreAway = row.querySelector('[class*="event__score--away"]');
+                            const status = row.querySelector('[class*="event__stage"]');
+                            const tournament = document.querySelector('[class*="event__title"]');
 
-                    // Extrair data/hora do jogo a partir de atributos data-* ou texto
-                    // O Flashscore usa timestamps Unix no atributo data-start-time
-                    const startTs = row.getAttribute('data-start-time')
-                        || row.querySelector('[data-start-time]')?.getAttribute('data-start-time')
-                        || null;
+                            const startTs = row.getAttribute('data-start-time')
+                                || row.querySelector('[data-start-time]')?.getAttribute('data-start-time')
+                                || null;
 
-                    // Tentar pegar a data exibida no bloco de evento (header de data)
-                    // Subir no DOM até encontrar o bloco de data do torneio
-                    let dateText = '';
-                    let el = row.previousElementSibling;
-                    for (let i = 0; i < 20 && el; i++) {
-                        if (el.className && el.className.includes('event__header')) {
-                            dateText = el.textContent.trim();
-                            break;
-                        }
-                        el = el.previousElementSibling;
-                    }
+                            let dateText = '';
+                            let el = row.previousElementSibling;
+                            for (let i = 0; i < 20 && el; i++) {
+                                if (el.className && el.className.includes('event__header')) {
+                                    dateText = el.textContent.trim();
+                                    break;
+                                }
+                                el = el.previousElementSibling;
+                            }
 
-                    if (home && away) {
-                        results.push({
-                            player_a: home.textContent.trim(),
-                            player_b: away.textContent.trim(),
-                            score_a: scoreHome ? scoreHome.textContent.trim() : '',
-                            score_b: scoreAway ? scoreAway.textContent.trim() : '',
-                            status: status ? status.textContent.trim() : '',
-                            tournament: tournament ? tournament.textContent.trim() : '',
-                            start_ts: startTs,     // timestamp Unix (segundos) ou null
-                            date_text: dateText,   // texto de data exibido (fallback)
+                            if (home && away) {
+                                results.push({
+                                    player_a: home.textContent.trim(),
+                                    player_b: away.textContent.trim(),
+                                    score_a: scoreHome ? scoreHome.textContent.trim() : '',
+                                    score_b: scoreAway ? scoreAway.textContent.trim() : '',
+                                    status: status ? status.textContent.trim() : '',
+                                    tournament: tournament ? tournament.textContent.trim() : '',
+                                    start_ts: startTs,
+                                    date_text: dateText,
+                                });
+                            }
                         });
-                    }
-                });
-                return results;
-            }""")
+                        return results;
+                    }""")
+                    all_matches.extend(matches)
+                    await page.close()
+                except Exception as inner_e:
+                    log.warning(f"Flashscore falhou para {url}: {inner_e}")
+                    continue
 
             await browser.close()
-            log.info(f"Flashscore: {len(matches)} partidas encontradas")
-            return matches
+            # Dedup por par de jogadores (a mesma partida pode aparecer em múltiplas URLs)
+            seen = set()
+            unique: list[dict] = []
+            for m in all_matches:
+                key = "_".join(sorted([m.get("player_a", "").lower(), m.get("player_b", "").lower()]))
+                if key in seen:
+                    continue
+                seen.add(key)
+                unique.append(m)
+            log.info(f"Flashscore: {len(unique)} partidas únicas em {len(urls)} URLs")
+            return unique
 
     except Exception as e:
         log.error(f"Flashscore scraping falhou: {e}")

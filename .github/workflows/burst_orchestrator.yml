@@ -1,0 +1,133 @@
+name: Burst Orchestrator — Match-Aware Content
+
+# Pattern event-driven: para cada partida importante em data/upcoming_matches.json,
+# dispara o tipo de post certo no horário certo (T-48h preview, T-2h countdown, T+1h result, etc.).
+#
+# Roda a cada 30 minutos durante a janela de tênis (08:00-23:00 UTC).
+# Refresh do calendário acontece 3x/dia (06h, 14h, 22h UTC).
+
+on:
+  schedule:
+    # Check de triggers — a cada 30min durante horário de jogos
+    - cron: "0,30 8-23 * * *"
+    # Refresh do calendário — 3x/dia
+    - cron: "0 6,14,22 * * *"
+  workflow_dispatch:
+    inputs:
+      refresh:
+        description: "Forçar refresh do calendário antes de checar triggers"
+        required: false
+        default: "false"
+
+concurrency:
+  group: publish-queue
+  cancel-in-progress: false
+
+jobs:
+  burst:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: pip-${{ runner.os }}-
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium
+          restore-keys: playwright-${{ runner.os }}-
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Install Node deps
+        run: npm ci
+
+      - name: Install Playwright (chromium only)
+        run: python -m playwright install chromium --with-deps
+
+      - name: Get current date and hour
+        id: meta
+        run: |
+          echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+          echo "hour=$(date +%H)" >> $GITHUB_OUTPUT
+
+      - name: Cache dados persistentes
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/database.sqlite
+            data/players
+            data/upcoming_matches.json
+          key: data-cache-v5-${{ steps.meta.outputs.date }}-${{ github.run_id }}
+          restore-keys: |
+            data-cache-v5-${{ steps.meta.outputs.date }}-
+            data-cache-v5-
+
+      - name: Decidir se faz refresh do calendário
+        id: refresh
+        run: |
+          # Refresh nos horários 06/14/22 UTC ou se forçado
+          HOUR="${{ steps.meta.outputs.hour }}"
+          FORCE="${{ github.event.inputs.refresh }}"
+          if [ "$HOUR" = "06" ] || [ "$HOUR" = "14" ] || [ "$HOUR" = "22" ] || [ "$FORCE" = "true" ]; then
+            echo "do_refresh=true" >> $GITHUB_OUTPUT
+          else
+            echo "do_refresh=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Atualizar calendário (se for hora de refresh)
+        if: steps.refresh.outputs.do_refresh == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python -m scrapers.match_calendar
+
+      - name: Checar e disparar triggers
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
+          PAGE_ID: ${{ secrets.PAGE_ID }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+        run: |
+          # exit 0 se disparou algo, exit 1 se nada — não fail o workflow nos dois casos
+          python scripts/burst_orchestrator.py || true
+
+      - name: Upload artefatos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: burst-${{ github.run_id }}
+          path: |
+            data/upcoming_matches.json
+            output/queue/
+          retention-days: 2

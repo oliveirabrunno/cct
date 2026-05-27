@@ -7,7 +7,7 @@ name: Monitor de Tendências — a cada 2h
 
 on:
   schedule:
-    - cron: "45 */2 * * *"
+    - cron: "45 */6 * * *"  # 4x/dia em vez de 12x — suficiente para capturar trends
   workflow_dispatch:
 
 concurrency:
@@ -17,7 +17,7 @@ concurrency:
 jobs:
   trend_monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4

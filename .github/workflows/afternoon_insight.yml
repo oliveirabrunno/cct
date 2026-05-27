@@ -52,9 +52,6 @@ jobs:
           key: playwright-${{ runner.os }}-chromium
           restore-keys: playwright-${{ runner.os }}-
 
-      - name: Install system deps
-        run: sudo apt-get install -y ffmpeg --no-install-recommends
-
       - name: Install Python deps
         run: pip install -r requirements.txt
 
