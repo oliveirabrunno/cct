@@ -97,18 +97,30 @@ async def run_daily_pipeline(skip_evergreen: bool = False):
     trending = await detector.check_all_players()
     log.info(f"Trending: {[t['player'] for t in trending]}")
 
-    for trend in trending[:2]:
+    # Aumentar para top 3 (era 2) — dá espaço pra cobrir breaking + trending normal
+    for trend in trending[:3]:
         player = trend["player"]
         news   = trend.get("news", [])
+        breaking = trend.get("signals", {}).get("breaking")
 
-        # Gate universal: bloqueia se o jogador apareceu em QUALQUER post nas últimas 6h
-        if player_posted_recently(player, hours=6):
-            log.info(f"Pulando {player} — apareceu em post recente (gate universal)")
-            continue
-        # Dedup por tipo: bloqueia trend_carousel duplicado nas últimas 48h
-        if is_duplicate("trend_carousel", player, hours=48, check_ig=True):
-            log.info(f"Pulando {player} — trend_carousel publicado recentemente")
-            continue
+        if breaking:
+            # Breaking events (eliminação/lesão/título) têm dedup SEPARADO
+            # — não são bloqueados pelos gates regulares porque o ângulo é único.
+            from datetime import date as _date_breaking
+            breaking_key = f"breaking_{breaking}_{player}_{_date_breaking.today().isoformat()}"
+            if is_duplicate("breaking_event", breaking_key, hours=24, check_ig=False):
+                log.info(f"Pulando {player} — breaking '{breaking}' já coberto hoje")
+                continue
+            log.info(f"🚨 BREAKING [{breaking}] sobre {player} — gerando carrossel de breaking")
+        else:
+            # Gate universal: bloqueia se o jogador apareceu em QUALQUER post nas últimas 6h
+            if player_posted_recently(player, hours=6):
+                log.info(f"Pulando {player} — apareceu em post recente (gate universal)")
+                continue
+            # Dedup por tipo: bloqueia trend_carousel duplicado nas últimas 48h
+            if is_duplicate("trend_carousel", player, hours=48, check_ig=True):
+                log.info(f"Pulando {player} — trend_carousel publicado recentemente")
+                continue
 
         log.info(f"Gerando carrossel + story + reel para {player}...")
         result = await generate_trend_carousel(player, trend["signals"], news)
@@ -118,7 +130,16 @@ async def run_daily_pipeline(skip_evergreen: bool = False):
                 result["image_paths"], result["caption"], result["hashtags"]
             )
             if ok:
-                register_post("trend_carousel", player, description=result["caption"][:100])
+                # Se foi breaking event, registrar AMBOS — trend_carousel e breaking_event
+                # para que próximos runs vejam que esse breaking específico já foi coberto.
+                register_post("trend_carousel", player, description=result["caption"][:200])
+                if breaking:
+                    from datetime import date as _date_breaking
+                    register_post(
+                        "breaking_event",
+                        f"breaking_{breaking}_{player}_{_date_breaking.today().isoformat()}",
+                        description=f"[{breaking}] {result['caption'][:150]}",
+                    )
 
                 # Story de teaser automático
                 story_path = await story_gen.generate_teaser_story(

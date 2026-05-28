@@ -28,11 +28,49 @@ FLASHSCORE_TENNIS_URL = "https://www.flashscore.com/tennis/"
 FLASHSCORE_RG_URL = "https://www.flashscore.com/tennis/atp-singles/french-open/"
 FLASHSCORE_RG_WTA_URL = "https://www.flashscore.com/tennis/wta-singles/french-open/"
 
-MONITORED_PLAYERS_LOWER = {
-    "sinner", "alcaraz", "djokovic", "zverev", "medvedev",
-    "fonseca", "haddad", "swiatek", "sabalenka", "gauff",
-    "rublev", "ruud", "fritz", "shelton", "rybakina",
-}
+# Construído dinamicamente: sobrenomes do top 30 ATP+WTA do ranking_cache
+# + brasileiros + estrelas em ascensão. Fallback hardcoded se cache faltar.
+def _build_monitored_surnames() -> set[str]:
+    surnames: set[str] = {
+        # Hardcoded core — sempre cobertos mesmo se cache faltar
+        "sinner", "alcaraz", "djokovic", "djokovi", "zverev", "medvedev",
+        "fonseca", "haddad", "swiatek", "swietek", "sabalenka", "gauff",
+        "rublev", "ruud", "fritz", "shelton", "rybakina",
+        "musetti", "lehecka", "auger-aliassime", "aliassime", "bublik",
+        "minaur", "de minaur", "tsitsipas", "rune", "dimitrov", "khachanov",
+        "pegula", "anisimova", "svitolina", "andreeva", "mboko", "muchova",
+        "bencic", "noskova", "ostapenko", "jodar", "mensik", "tien",
+        "monteiro", "seyboth", "wild", "meligeni", "pigossi",
+        "wawrinka", "murray", "monfils",
+    }
+    # Aumentar com top 30 do ranking_cache (extrair sobrenome do nome)
+    try:
+        import json
+        from pathlib import Path
+        for tour in ("atp", "wta"):
+            path = Path(f"data/ranking_cache_{tour}.json")
+            if not path.exists():
+                continue
+            for p in json.loads(path.read_text()):
+                name = p.get("name", "").lower()
+                if not name:
+                    continue
+                # Pegar último token como sobrenome (cobre "De Minaur", "Auger-Aliassime")
+                last = name.split()[-1] if name else ""
+                # Remover acentos básicos
+                for src, dst in [("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"),
+                                 ("ú", "u"), ("ã", "a"), ("õ", "o"), ("ç", "c"),
+                                 ("ć", "c"), ("š", "s"), ("ž", "z"), ("ł", "l"),
+                                 ("ą", "a"), ("ę", "e")]:
+                    last = last.replace(src, dst)
+                if len(last) >= 4:
+                    surnames.add(last)
+    except Exception:
+        pass
+    return surnames
+
+
+MONITORED_PLAYERS_LOWER = _build_monitored_surnames()
 
 
 async def fetch_live_scores(urls: list[str] | None = None) -> list[dict]:
