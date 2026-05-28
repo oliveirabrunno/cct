@@ -9,6 +9,11 @@ on:
     - cron: "0 */4 * * *"   # 6x/dia: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC
   workflow_dispatch:
 
+# actions:write necessário para o trigger_content disparar orchestrator.yml via API
+permissions:
+  contents: read
+  actions: write
+
 concurrency:
   group: competitor-monitor
   cancel-in-progress: true   # cancelar run anterior se nova já foi disparada
