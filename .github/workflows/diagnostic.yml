@@ -1,0 +1,64 @@
+name: Diagnóstico — Por que não está postando?
+
+# Workflow on-demand para investigar por que outros workflows rodam sem erro
+# mas não publicam nada no Instagram. Mostra estado completo do bot:
+# quota Meta, dedup DB, posts recentes, trend detector, match calendar.
+#
+# Roda somente via workflow_dispatch (manual).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: pip-${{ runner.os }}-
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Get current date
+        id: get-date
+        run: echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: Cache dados persistentes
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/database.sqlite
+            data/upcoming_matches.json
+          key: data-cache-v5-${{ steps.get-date.outputs.date }}-diagnostic
+          restore-keys: |
+            data-cache-v5-${{ steps.get-date.outputs.date }}-
+            data-cache-v5-
+
+      - name: Rodar diagnóstico
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          FLICKR_API_KEY: ${{ secrets.FLICKR_API_KEY }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
+          PAGE_ID: ${{ secrets.PAGE_ID }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+        run: python scripts/diagnostic.py
