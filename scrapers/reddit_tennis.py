@@ -1,21 +1,66 @@
+import feedparser
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 from utils.logger import get_logger
 
 log = get_logger(__name__)
 
-HEADERS = {"User-Agent": "CafeComTenis/1.0 (Instagram content bot; contact: cafecomtenis@gmail.com)"}
-SUBREDDIT_URL = "https://www.reddit.com/r/tennis/hot.json?limit=50"
+# Reddit bloqueou bots em 2024 — JSON API retorna 403 mesmo com UA "honesto".
+# Solução: usar feed RSS público (.rss) que continua acessível.
+# Trade-off: RSS não retorna score nem num_comments, só title/link/timestamp.
+SUBREDDIT_RSS = "https://www.reddit.com/r/tennis/hot/.rss"
+SUBREDDIT_JSON = "https://www.reddit.com/r/tennis/hot.json?limit=50"
+
+# UA "browser-like" — Reddit bloqueia coisas com "bot" no nome
+BROWSER_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
+HEADERS = {"User-Agent": BROWSER_UA}
+
+
+def _fetch_via_rss(max_age_hours: int) -> list[dict]:
+    """Fallback via RSS — não tem score mas tem título/data."""
+    try:
+        feed = feedparser.parse(SUBREDDIT_RSS, request_headers=HEADERS)
+    except Exception as e:
+        log.error(f"Reddit RSS falhou: {e}")
+        return []
+
+    now_utc = datetime.now(timezone.utc)
+    results = []
+    for entry in feed.entries[:50]:
+        try:
+            pub = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
+        except Exception:
+            continue
+        age_hours = (now_utc - pub).total_seconds() / 3600
+        if age_hours > max_age_hours:
+            continue
+        title = entry.get("title", "")
+        results.append({
+            "title": title,
+            "title_lower": title.lower(),
+            "score": 0,  # RSS não expõe score — placeholder
+            "url": entry.get("link", ""),
+            "age_hours": round(age_hours, 1),
+            "num_comments": 0,
+            "flair": "",
+        })
+    return results
 
 
 def fetch_hot_posts(min_score: int = 300, max_age_hours: int = 24) -> list[dict]:
+    # Tentativa 1: JSON API (tem score, mais útil)
     try:
-        response = requests.get(SUBREDDIT_URL, headers=HEADERS, timeout=15)
+        response = requests.get(SUBREDDIT_JSON, headers=HEADERS, timeout=15)
         response.raise_for_status()
         data = response.json()
     except Exception as e:
-        log.error(f"Reddit fetch falhou: {e}")
-        return []
+        log.warning(f"Reddit JSON falhou ({e}) — tentando RSS")
+        results = _fetch_via_rss(max_age_hours)
+        log.info(f"Reddit RSS fallback: {len(results)} posts nas últimas {max_age_hours}h")
+        return results
 
     posts = data.get("data", {}).get("children", [])
     now = datetime.now().timestamp()

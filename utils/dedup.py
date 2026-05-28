@@ -356,3 +356,62 @@ def get_recent_posts(hours: int = 48) -> list[dict]:
          "published_at": r[3], "ig_post_id": r[4]}
         for r in rows
     ]
+
+
+def _token_set(text: str) -> set[str]:
+    """Quebra texto em tokens normalizados (lowercase, sem acentos, > 3 letras)."""
+    norm = _normalize_string(text)
+    return {t for t in norm.split() if len(t) > 3}
+
+
+def is_semantically_similar(text: str, hours: int = 48, threshold: float = 0.6) -> bool:
+    """
+    Detecta se já foi publicado conteúdo com >threshold% de overlap de tokens
+    no SQLite local + no feed do IG.
+    Evita repetição como 3 posts seguidos sobre "Fonseca. Djokovic. Roland Garros."
+    """
+    if not text or len(text) < 20:
+        return False
+    candidate = _token_set(text)
+    if len(candidate) < 4:
+        return False
+
+    # Camada 1 — SQLite (descrições registradas)
+    cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
+    with _get_conn() as conn:
+        rows = conn.execute(
+            "SELECT description FROM posts WHERE published_at > ? AND description IS NOT NULL",
+            (cutoff,)
+        ).fetchall()
+    for (desc,) in rows:
+        if not desc:
+            continue
+        other = _token_set(desc)
+        if not other:
+            continue
+        overlap = len(candidate & other) / max(len(candidate), len(other))
+        if overlap >= threshold:
+            log.info(
+                f"Semanticamente similar a post recente ({overlap:.0%} overlap): "
+                f"'{desc[:60]}...'"
+            )
+            return True
+
+    # Camada 2 — IG Graph API (captions de posts recentes)
+    posts = _fetch_ig_recent_posts()
+    for post in posts[:15]:
+        cap = post.get("caption", "")
+        if not cap:
+            continue
+        other = _token_set(cap)
+        if not other:
+            continue
+        overlap = len(candidate & other) / max(len(candidate), len(other))
+        if overlap >= threshold:
+            log.info(
+                f"Semanticamente similar a post IG ({overlap:.0%} overlap): "
+                f"'{cap[:60]}...'"
+            )
+            return True
+
+    return False

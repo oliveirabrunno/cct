@@ -49,7 +49,7 @@ from generators.story import StoryGenerator
 from generators.tts import generate_tts
 from generators.reel import generate_reel_from_carousel, generate_quick_reel
 from publisher.local_publisher import LocalPublisher
-from utils.dedup import is_duplicate, register_post, player_posted_recently
+from utils.dedup import is_duplicate, register_post, player_posted_recently, is_semantically_similar
 from utils.logger import get_logger
 from utils.image_manager import ImageManager
 
@@ -357,7 +357,10 @@ async def run_afternoon_insight():
 
     ok = await publisher.publish_post(path, caption_clean, hashtags)
     if ok:
-        register_post("afternoon_insight", player, description=stat_data["headline"])
+        register_post(
+            "afternoon_insight", player,
+            description=f"{stat_data['headline']} | {caption_clean[:200]}",
+        )
 
 
 
@@ -682,6 +685,11 @@ async def run_stat_card():
         log.info(f"Stat card já publicado para {player}/{angle_key}/{headline_norm[:40]} — pulando")
         return
 
+    # Anti-repetição semântica: bloquear se headline + caption são similares a algo recente
+    if is_semantically_similar(f"{headline} {caption}", hours=48, threshold=0.6):
+        log.info(f"Stat card semanticamente similar a post recente — pulando")
+        return
+
     path = await generate_card_with_player(
         "stat_card",
         {"player": player_full, "tournament": CURRENT_TOURNAMENT_SHORT},
@@ -695,8 +703,10 @@ async def run_stat_card():
     if path and can_publish_feed_post():
         ok = await publisher.publish_post(str(path), caption, hashtags)
         if ok:
-            register_post("stat_card", player, description=f"[{angle_key}] {headline}")
-            register_post("stat_card_angle", stat_signature, description=headline)
+            # Salva headline + caption pra semantic dedup detectar repetição
+            full_desc = f"[{angle_key}] {headline} | {caption[:200]}"
+            register_post("stat_card", player, description=full_desc)
+            register_post("stat_card_angle", stat_signature, description=full_desc)
             log.info(f"Stat card publicado: {headline}")
 
             story_gen = StoryGenerator()
@@ -929,20 +939,27 @@ async def run_match_preview():
         player_b = args[1]
         round_info = args[2] if len(args) > 2 else "Roland Garros 2026"
     else:
-        # Auto: pegar 2 jogadores mais trending para o confronto do dia
-        detector = TrendDetector()
-        trending = await detector.check_all_players()
-        if len(trending) >= 2:
-            player_a = trending[0]["player"]
-            player_b = trending[1]["player"]
-        elif len(trending) == 1:
-            player_a = trending[0]["player"]
-            entries = CURRENT_TOURNAMENT.get("entries_atp", [])
-            player_b = next((p for p in entries if p != player_a), "Novak Djokovic")
-        else:
-            log.info("match-preview: sem trending suficiente — abortando")
+        # Auto: validar pares contra o calendar real ANTES de assumir que jogam.
+        # Sem validação, top 2 trending são pareados mesmo sem se enfrentarem
+        # (bug histórico: gerou "Fonseca vs Sinner" quando Fonseca jogava Djokovic).
+        from scrapers.match_calendar import load_calendar, _load_manual_overrides
+        from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+
+        now_utc = _dt.now(_tz.utc)
+        cutoff = now_utc + _td(hours=72)
+        scheduled = load_calendar() + _load_manual_overrides(now_utc, cutoff)
+
+        if not scheduled:
+            log.info("match-preview: nenhum jogo confirmado no calendar/manual — abortando "
+                     "(evita gerar par falso). Use args explícitos ou popule manual_matches.json.")
             return
-        round_info = f"{CURRENT_TOURNAMENT['short']} 2026"
+
+        # Pegar a partida mais próxima com maior importance
+        next_match = scheduled[0]
+        player_a = next_match["player_a"]
+        player_b = next_match["player_b"]
+        round_info = next_match.get("tournament") or f"{CURRENT_TOURNAMENT['short']} 2026"
+        log.info(f"match-preview: usando partida confirmada {player_a} vs {player_b}")
 
     tournament = CURRENT_TOURNAMENT["name"]
     surface    = CURRENT_TOURNAMENT["surface"]
@@ -950,6 +967,12 @@ async def run_match_preview():
     dedup_key = f"match_preview_{player_a.split()[-1].lower()}_{player_b.split()[-1].lower()}"
     if is_duplicate("match_preview", dedup_key, hours=48):
         log.info(f"match-preview: {player_a} vs {player_b} já publicado — pulando")
+        return
+
+    # Anti-repetição semântica: bloquear se headline/caption já saiu nas últimas 48h
+    preview_signature = f"{player_a} {player_b} {round_info} primeiro confronto duelo"
+    if is_semantically_similar(preview_signature, hours=48, threshold=0.55):
+        log.info(f"match-preview: tema {player_a} vs {player_b} já foi recente — pulando para evitar duplicata")
         return
 
     log.info(f"=== Match Preview: {player_a} vs {player_b} em {tournament} ===")
@@ -971,6 +994,21 @@ async def run_match_preview():
     content_gen = ContentGenerator()
     system = (_load_prompt("viral_master_prompt") + "\n\n" + _load_prompt("base_voice")).strip()
 
+    # Rotação de ângulo por dia da semana — evita carrosséis repetidos
+    # ("primeiro confronto da história" saindo 3x seguidas)
+    from datetime import date as _date
+    PREVIEW_ANGLES = [
+        ("hook_geracional",      "comparação geracional: idades, eras, contexto histórico"),
+        ("hook_stat_inedito",    "stat inédito que ninguém ainda destacou sobre esse confronto"),
+        ("hook_caminho",         "caminho até a final: quem tem chave mais difícil"),
+        ("hook_surface",         "performance na superfície atual (saibro): titulares vs zebras"),
+        ("hook_clutch",          "performance em momentos decisivos (tie-breaks, sets longos)"),
+        ("hook_underdog",        "ângulo do underdog: o que pode dar a virada"),
+        ("hook_status_br",       "se tem brasileiro: contexto nacional + comparação com Guga"),
+    ]
+    angle_key, angle_desc = PREVIEW_ANGLES[_date.today().weekday()]
+    log.info(f"match-preview angle: {angle_key}")
+
     template_data = {
         "player_a":          player_a,
         "player_b":          player_b,
@@ -991,6 +1029,13 @@ async def run_match_preview():
     prompt = _load_prompt("match_preview")
     for k, v in template_data.items():
         prompt = prompt.replace(f"{{{k}}}", str(v))
+
+    # Injetar instrução de ângulo no prompt — força variação
+    prompt += (
+        f"\n\nÂNGULO OBRIGATÓRIO DESTE CARROSSEL: {angle_desc}.\n"
+        f"NÃO use o ângulo 'primeiro confronto da história' a menos que seja "
+        f"literalmente o ângulo do dia. Foque no ângulo acima."
+    )
 
     raw = content_gen._call_claude(system, prompt, max_tokens=2000)
     slides_content = content_gen._parse_json_response(raw)
@@ -1031,7 +1076,14 @@ async def run_match_preview():
 
     ok = await publisher.publish_carousel(image_paths, caption, hashtags)
     if ok:
-        register_post("match_preview", dedup_key, description=f"{player_a} vs {player_b}")
+        # Description completa pro semantic dedup capturar texto real do post
+        # (antes só salvava "X vs Y" → semantic similarity não pegava nada)
+        first_headline = (slides_content.get("slides") or [{}])[0].get("headline", "")
+        register_post(
+            "match_preview",
+            dedup_key,
+            description=f"{first_headline} | {caption[:200]}",
+        )
         log.info(f"Match preview publicado: {player_a} vs {player_b}")
 
         # Story poll automático

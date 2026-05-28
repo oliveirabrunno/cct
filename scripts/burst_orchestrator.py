@@ -34,7 +34,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from dotenv import load_dotenv
 load_dotenv()
 
-from scrapers.match_calendar import load_calendar, update_calendar
+from scrapers.match_calendar import (
+    load_calendar, update_calendar, _load_manual_overrides
+)
 from utils.dedup import is_duplicate, register_post
 from utils.logger import get_logger
 
@@ -119,9 +121,22 @@ def execute_trigger(match: dict, trigger: dict, dry_run: bool = False) -> bool:
 
 
 def run_burst_check(dry_run: bool = False) -> dict:
+    # Sempre carregar o override manual também, mesmo se o calendário principal
+    # estiver vazio (cache não restaurou, refresh falhou, etc.)
     matches = load_calendar()
+    now = datetime.now(timezone.utc)
+    cutoff = now + timedelta(hours=72)
+    manual = _load_manual_overrides(now, cutoff)
+
+    if manual:
+        existing_keys = {m["match_key"] for m in matches}
+        for m in manual:
+            if m["match_key"] not in existing_keys:
+                matches.append(m)
+        log.info(f"Override manual: {len(manual)} partidas mescladas (total: {len(matches)})")
+
     if not matches:
-        log.info("Calendário vazio — nada a disparar")
+        log.info("Calendário e override manual vazios — nada a disparar")
         return {"fired": 0, "candidates": 0}
 
     fired = 0
