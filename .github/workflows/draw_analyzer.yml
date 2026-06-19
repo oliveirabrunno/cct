@@ -5,10 +5,11 @@ name: Chaveamento de Torneio
 # Também pode ser disparado manualmente com filtro de jogador.
 
 on:
-  schedule:
-    - cron: "0 12 * * 5"   # Sexta 09:00 BRT — prep para torneios fim de semana
-    - cron: "0 12 * * 0"   # Domingo 09:00 BRT — prep para torneios semana
   workflow_dispatch:
+  # PAUSADO — retomar quando Meta API e token estiverem resolvidos
+  # schedule:
+  #   - cron: "0 12 * * 5"
+  #   - cron: "0 12 * * 0"
     inputs:
       player:
         description: "Jogador específico (ex: fonseca, sinner) — vazio para geral ATP+WTA"

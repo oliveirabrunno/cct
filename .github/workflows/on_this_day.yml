@@ -5,9 +5,10 @@ name: On This Day — Histórico (Seg/Qua/Sex)
 # Nos outros dias o slot de 06:00 fica livre para preview de partida ou trending.
 
 on:
-  schedule:
-    - cron: "0 9 * * 1,3,5"
   workflow_dispatch:
+  # PAUSADO — retomar quando Meta API e token estiverem resolvidos
+  # schedule:
+  #   - cron: "0 9 * * 1,3,5"
 
 concurrency:
   group: publish-queue

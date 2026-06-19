@@ -5,9 +5,10 @@ name: Monitor de Concorrentes e Trends
 # Setup leve: apenas Python (sem Node, sem Playwright).
 
 on:
-  schedule:
-    - cron: "0 */4 * * *"   # 6x/dia: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC
   workflow_dispatch:
+  # PAUSADO — retomar quando Meta API e token estiverem resolvidos
+  # schedule:
+  #   - cron: "0 */4 * * *"
 
 # actions:write necessário para o trigger_content disparar orchestrator.yml via API
 permissions:

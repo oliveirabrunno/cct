@@ -5,9 +5,10 @@ name: Ranking Semanal — Segunda 08h BRT
 # Foto do destaque da semana + resumo gerado por Claude.
 
 on:
-  schedule:
-    - cron: "0 11 * * 1"   # 11:00 UTC = 08:00 BRT
   workflow_dispatch:
+  # PAUSADO — retomar quando Meta API e token estiverem resolvidos
+  # schedule:
+  #   - cron: "0 11 * * 1"
 
 concurrency:
   group: publish-queue

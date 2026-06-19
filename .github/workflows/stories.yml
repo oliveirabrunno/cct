@@ -7,11 +7,12 @@ name: Stories — 3x por Dia
 # Stories NÃO consomem quota de feed posts (Meta)
 
 on:
-  schedule:
-    - cron: "0 13 * * *"    # 10:00 BRT
-    - cron: "0 18 * * *"    # 15:00 BRT
-    - cron: "30 22 * * *"   # 19:30 BRT
   workflow_dispatch:
+  # PAUSADO — retomar quando Meta API e token estiverem resolvidos
+  # schedule:
+  #   - cron: "0 13 * * *"
+  #   - cron: "0 18 * * *"
+  #   - cron: "30 22 * * *"
 
 concurrency:
   group: publish-queue

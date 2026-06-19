@@ -6,9 +6,10 @@ name: Prefetch Fotos — Segunda 03h BRT
 # Também pode ser acionado manualmente via workflow_dispatch.
 
 on:
-  schedule:
-    - cron: "0 6 * * 1"
   workflow_dispatch:
+  # PAUSADO — retomar quando Meta API e token estiverem resolvidos
+  # schedule:
+  #   - cron: "0 6 * * 1"
     inputs:
       top_n:
         description: "Quantos jogadores por tour (default: 100)"

@@ -6,9 +6,10 @@ name: Match Preview — Pré-jogo 07h BRT
 # Objetivo: ser o primeiro canal a postar análise antes da partida.
 
 on:
-  schedule:
-    - cron: "0 10 * * *"   # 10:00 UTC = 07:00 BRT
   workflow_dispatch:
+  # PAUSADO — retomar quando Meta API e token estiverem resolvidos
+  # schedule:
+  #   - cron: "0 10 * * *"
     inputs:
       player_a:
         description: "Jogador A (ex: Fonseca, Sinner)"

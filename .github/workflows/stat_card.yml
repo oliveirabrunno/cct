@@ -4,9 +4,10 @@ name: Stat Card Chocante — 10h30 BRT
 # Foco no jogador mais trending do momento (Fonseca, Sinner, Alcaraz etc.)
 
 on:
-  schedule:
-    - cron: "30 13 * * *"
   workflow_dispatch:
+  # PAUSADO — retomar quando Meta API e token estiverem resolvidos
+  # schedule:
+  #   - cron: "30 13 * * *"
 
 concurrency:
   group: publish-queue

@@ -6,9 +6,10 @@ name: Monitor de Tendências — a cada 2h
 # Objetivo: capitalizar em menos de 2h sobre quebras de notícia.
 
 on:
-  schedule:
-    - cron: "45 */6 * * *"  # 4x/dia em vez de 12x — suficiente para capturar trends
   workflow_dispatch:
+  # PAUSADO — retomar quando Meta API e token estiverem resolvidos
+  # schedule:
+  #   - cron: "45 */6 * * *"
 
 concurrency:
   group: publish-queue

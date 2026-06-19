@@ -5,9 +5,10 @@ name: Pipeline Principal — 09h BRT
 # Roda às 09:00 BRT (12:00 UTC) todos os dias
 
 on:
-  schedule:
-    - cron: "0 12 * * *"
   workflow_dispatch:
+  # PAUSADO — retomar quando Meta API e token estiverem resolvidos
+  # schedule:
+  #   - cron: "0 12 * * *"
     inputs:
       mode:
         description: "Modo: daily | trends | ranking | rg-launch | draw-path | stories"

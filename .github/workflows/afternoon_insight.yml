@@ -5,9 +5,10 @@ name: Afternoon Insight — 15h BRT
 # Antes deste workflow, o handler run_afternoon_insight nunca rodava automaticamente
 
 on:
-  schedule:
-    - cron: "0 18 * * *"
   workflow_dispatch:
+  # PAUSADO — retomar quando Meta API e token estiverem resolvidos
+  # schedule:
+  #   - cron: "0 18 * * *"
 
 concurrency:
   group: publish-queue
